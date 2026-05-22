@@ -23,6 +23,12 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.0.1
         version: 11.1.21(@nestjs/common@11.1.21(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.21)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -57,6 +63,9 @@ importers:
       '@types/supertest':
         specifier: ^7.0.0
         version: 7.2.0
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.10
       eslint:
         specifier: ^9.18.0
         version: 9.39.4(jiti@2.7.0)
