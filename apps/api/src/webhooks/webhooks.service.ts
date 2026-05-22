@@ -21,16 +21,21 @@ const secret = process.env.CLERK_WEBHOOK_SECRET!
       'svix-signature': headers['svix-signature'],
     }) as any
 
-    if (evt.type === 'user.created') {
-      await this.db.execute(sql`
-        INSERT INTO organizations (clerk_user_id, name, email)
-        VALUES (
-          ${evt.data.id},
-         ${evt.data.email_addresses[0].email_address.split('@')[0]},
-          ${evt.data.email_addresses[0].email_address}
-        )
-      `)
-    }
+if (evt.type === 'user.created') {
+  const trialEndsAt = new Date()
+  trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+
+  await this.db.execute(sql`
+    INSERT INTO organizations (clerk_user_id, name, email, is_trial, trial_ends_at)
+    VALUES (
+      ${evt.data.id},
+      ${evt.data.email_addresses[0].email_address.split('@')[0]},
+      ${evt.data.email_addresses[0].email_address},
+      true,
+      ${trialEndsAt.toISOString()}
+    )
+  `)
+}
 
     return { received: true }
   }

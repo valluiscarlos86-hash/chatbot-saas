@@ -16,6 +16,8 @@ export const organizations = pgTable('organizations', {
   monthlyMessageCount: integer('monthly_message_count').default(0).notNull(),
   credits: integer('credits').default(200).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  isTrial: boolean('is_trial').default(true).notNull(),
+  trialEndsAt: timestamp('trial_ends_at'),
   settings: jsonb('settings').default({}).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
