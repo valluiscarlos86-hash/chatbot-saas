@@ -1,65 +1,105 @@
-import Image from "next/image";
+import { auth, currentUser } from '@clerk/nextjs/server'
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
 
-export default function Home() {
+async function getOrganization(clerkUserId: string) {
+  const result = await db.execute(
+    sql`SELECT name, email, plan, is_trial, trial_ends_at, monthly_message_count, monthly_message_limit 
+        FROM organizations 
+        WHERE clerk_user_id = ${clerkUserId} 
+        LIMIT 1`
+  )
+  return result[0] ?? null
+}
+
+function getDaysRemaining(trialEndsAt: string): number {
+  const now = new Date()
+  const end = new Date(trialEndsAt)
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.max(0, diff)
+}
+
+export default async function DashboardPage() {
+  const { userId } = await auth()
+  const user = await currentUser()
+  const org = await getOrganization(userId!)
+
+  const firstName = user?.firstName ?? String(org?.name ?? 'Usuario')
+  const daysRemaining = org?.trial_ends_at ? getDaysRemaining(String(org.trial_ends_at)) : 0
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Hola MI AMORCITOOO!  TE AMO MUCHO ! VALENTINO.
+    <div className="flex flex-col h-full">
+
+      {/* HEADER */}
+      <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">Inicio</span>
+        <div className="flex items-center gap-3">
+   {Boolean(org?.is_trial) && (
+  <span className="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
+    {daysRemaining > 0 ? `${daysRemaining} días de prueba` : 'Prueba vencida'}
+  </span>
+)}
+        </div>
+      </div>
+
+      {/* CONTENIDO */}
+      <div className="flex-1 p-6 bg-gray-50 flex flex-col gap-6">
+
+        {/* Bienvenida */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Buen día, <span className="text-[#10B981]">{firstName}</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-sm text-gray-500 mt-1">
+            Aquí está el resumen de tu cuenta
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Métricas */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
+              <span className="text-emerald-600 text-sm">✉</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-1">Mensajes este mes</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {Number(org?.monthly_message_count ?? 0)}
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              límite: {Number(org?.monthly_message_limit ?? 150)} mensajes
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+              <span className="text-blue-600 text-sm">💬</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-1">Conversaciones activas</div>
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-400 mt-1">bot respondiendo</div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
+              <span className="text-purple-600 text-sm">📄</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-1">Documentos</div>
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <div className="text-xs text-gray-400 mt-1">en knowledge base</div>
+          </div>
         </div>
-      </main>
+
+        {/* Conversaciones recientes */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold text-gray-900">Conversaciones recientes</span>
+            <span className="text-sm text-[#10B981] cursor-pointer hover:underline">Ver todas</span>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
+            <p className="text-sm text-gray-400">Todavía no hay conversaciones</p>
+            <p className="text-xs text-gray-300 mt-1">Conectá WhatsApp para empezar</p>
+          </div>
+        </div>
+
+      </div>
     </div>
-  );
+  )
 }
