@@ -10,8 +10,7 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-white">
 
       {/* SIDEBAR */}
-      <aside className="w-52 min-w-52 bg-[#111827] flex flex-col">
-
+    <aside className="w-60 min-w-60 bg-[#111827] flex flex-col">
         {/* Logo */}
         <div className="px-4 py-5 text-white font-bold text-lg tracking-tight">
           Atent<span className="text-[#10B981]">IA</span>
@@ -39,19 +38,22 @@ export default function DashboardLayout({
           </Link>
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-[#1F2937]">
-          <Link href="/dashboard/settings" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-[#1F2937] hover:text-white transition-colors mb-2">
-            Configuración
-          </Link>
-          <div className="flex items-center gap-2.5 px-2 py-2">
-          <UserButton />
-            <div className="flex flex-col">
-              <span className="text-xs text-white font-medium">Mi cuenta</span>
-              <span className="text-xs text-gray-500">Plan gratuito</span>
-            </div>
-          </div>
-        </div>
+{/* Footer */}
+<div className="p-3 border-t border-[#1F2937]">
+  <Link href="/dashboard/settings" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-[#1F2937] hover:text-white transition-colors mb-2">
+    Configuración
+  </Link>
+  <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#1F2937] cursor-pointer transition-colors">
+    <div className="w-7 h-7 rounded-full bg-[#10B981] flex items-center justify-content-center text-xs font-semibold text-white flex items-center justify-center min-w-7">
+      VB
+    </div>
+    <div className="flex flex-col">
+      <span className="text-xs text-white font-medium">Valentino B.</span>
+      <span className="text-xs text-gray-500">Plan gratuito</span>
+    </div>
+    <UserButton />
+  </div>
+</div>
 
       </aside>
 
