@@ -70,3 +70,20 @@ export const knowledgeDocuments = pgTable('knowledge_documents', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
+
+
+export const chatbotConfigs = pgTable('chatbot_configs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id').references(() => organizations.id).notNull(),
+  businessName: text('business_name'),
+  businessDescription: text('business_description'),
+  contactInfo: text('contact_info'),
+  botName: text('bot_name'),
+  botTone: text('bot_tone').default('friendly'),
+  welcomeMessage: text('welcome_message'),
+  escalationRules: text('escalation_rules'),
+  officeHours: text('office_hours'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
