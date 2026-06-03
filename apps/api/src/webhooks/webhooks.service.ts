@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import { Webhook } from 'svix'
 import { DATABASE_CONNECTION } from '../database/database.module'
 import { sql } from 'drizzle-orm'
+import axios from 'axios'
 
 @Injectable()
 export class WebhooksService {
@@ -49,8 +50,6 @@ export class WebhooksService {
   }
 
   async handleWhatsappEvent(body: any) {
-    console.log('Mensaje de WhatsApp recibido:', JSON.stringify(body, null, 2))
-
     const entry = body?.entry?.[0]
     const changes = entry?.changes?.[0]
     const message = changes?.value?.messages?.[0]
@@ -62,6 +61,34 @@ export class WebhooksService {
 
     console.log(`Mensaje de ${from}: ${text}`)
 
+    await this.sendWhatsappMessage(from, `¡Hola! Recibí tu mensaje: "${text}". Pronto te responderé con IA. 🤖`)
+
     return { received: true }
+  }
+
+  async sendWhatsappMessage(to: string, message: string) {
+    const token = process.env.WHATSAPP_TOKEN
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
+
+    try {
+      await axios.post(
+        `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to,
+          type: 'text',
+          text: { body: message },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      console.log(`Mensaje enviado a ${to}`)
+    } catch (error) {
+    console.error('Error enviando mensaje:', (error as any)?.response?.data)
+    }
   }
 }
