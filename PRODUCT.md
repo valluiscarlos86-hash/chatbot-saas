@@ -198,5 +198,19 @@ Para el equipo de AtentIA, no para los clientes:
 
 ---
 
+
+### 3.6 Flow Builder visual
+
+Constructor visual de flujos conversacionales — el cliente puede diseñar árboles de decisión con drag & drop, sin necesidad de programar.
+
+- Editor de nodos con conexiones visuales
+- Nodos disponibles: enviar mensaje, esperar respuesta, condición, webhook externo, asignar agente, cerrar conversación
+- Variables de conversación (nombre, teléfono, datos capturados)
+- Webhooks para validar datos contra sistemas externos (ej: validar cliente por DNI/CUIT)
+- Lógica condicional: si respuesta es X → ir a nodo Y
+- Convive con el modo IA — el cliente puede combinar flujos fijos con respuestas inteligentes
+- Prioridad: Fase 3, después de tener clientes pagando
+
+
 *Documento vivo — se actualiza con cada decisión de producto.*
 *Última actualización: Mayo 2026*
