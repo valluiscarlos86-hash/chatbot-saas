@@ -3,11 +3,13 @@ import { Webhook } from 'svix'
 import { DATABASE_CONNECTION } from '../database/database.module'
 import { sql } from 'drizzle-orm'
 import axios from 'axios'
+import { AiService } from '../ai.service'
 
 @Injectable()
 export class WebhooksService {
   constructor(
     @Inject(DATABASE_CONNECTION) private db: any,
+    private aiService: AiService,
   ) {}
 
   async handleClerkEvent(headers: Record<string, string>, body: any) {
@@ -55,13 +57,84 @@ export class WebhooksService {
     const message = changes?.value?.messages?.[0]
 
     if (!message) return { received: true }
+    if (message.type !== 'text') return { received: true }
 
     const from = message.from
     const text = message.text?.body
 
+    if (!text) return { received: true }
+
     console.log(`Mensaje de ${from}: ${text}`)
 
-    await this.sendWhatsappMessage(from, `¡Hola! Recibí tu mensaje: "${text}". Pronto te responderé con IA. 🤖`)
+    try {
+      // 1 — Buscar la organización y su config de chatbot
+      const configResult = await this.db.execute(sql`
+        SELECT 
+          o.id as org_id,
+          cc.bot_name,
+          cc.bot_tone,
+          cc.business_name,
+          cc.business_description,
+          cc.welcome_message,
+          cc.escalation_rules
+        FROM organizations o
+        LEFT JOIN chatbot_configs cc ON cc.org_id = o.id
+        LIMIT 1
+      `)
+
+      const config = configResult.rows?.[0]
+
+// 2 — Buscar historial de conversación (solo si tenemos org_id)
+let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+
+if (config?.org_id) {
+  const historyResult = await this.db.execute(sql`
+    SELECT role, content
+    FROM messages
+    WHERE conversation_id IN (
+      SELECT id FROM conversations
+      WHERE org_id = ${config.org_id}
+      AND customer_phone = ${from}
+      ORDER BY created_at DESC
+      LIMIT 1
+    )
+    ORDER BY created_at ASC
+    LIMIT 10
+  `)
+
+  conversationHistory = (historyResult.rows || []).map((row: any) => ({
+    role: row.role as 'user' | 'assistant',
+    content: row.content,
+  }))
+}
+
+      // 3 — Armar config del chatbot con los nombres reales de columnas
+      const chatbotConfig = {
+        botName: config?.bot_name || 'Asistente',
+        tone: config?.bot_tone || 'amigable',
+        language: 'español',
+        systemPrompt: config?.business_description
+          ? `Sos el asistente de ${config.business_name || 'esta empresa'}. ${config.business_description}. ${config.escalation_rules ? 'Reglas de escalada: ' + config.escalation_rules : ''}`
+          : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
+      }
+
+      // 4 — Llamar a OpenAI
+      const aiResponse = await this.aiService.generateResponse(
+        text,
+        chatbotConfig,
+        conversationHistory,
+      )
+
+      // 5 — Enviar respuesta por WhatsApp
+      await this.sendWhatsappMessage(from, aiResponse)
+
+    } catch (error) {
+      console.error('Error procesando mensaje:', error)
+      await this.sendWhatsappMessage(
+        from,
+        'Lo siento, estoy teniendo dificultades técnicas. Un agente te contactará pronto.'
+      )
+    }
 
     return { received: true }
   }
@@ -88,7 +161,7 @@ export class WebhooksService {
       )
       console.log(`Mensaje enviado a ${to}`)
     } catch (error) {
-    console.error('Error enviando mensaje:', (error as any)?.response?.data)
+      console.error('Error enviando mensaje:', (error as any)?.response?.data)
     }
   }
 }
