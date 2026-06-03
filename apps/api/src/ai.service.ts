@@ -23,20 +23,21 @@ export class AiService {
     conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): Promise<string> {
     try {
-      const systemMessage = `
-Sos ${chatbotConfig.botName}, un asistente de atención al cliente.
+    const systemMessage = `
+Sos ${chatbotConfig.botName}, un asistente de atención al cliente de ${chatbotConfig.botName}.
 
 ${chatbotConfig.systemPrompt}
 
-Tono de respuesta: ${chatbotConfig.tone}
-Idioma: ${chatbotConfig.language}
+Instrucciones específicas del negocio:
+${chatbotConfig.tone === 'formal' ? 'Usá un tono formal y profesional.' : chatbotConfig.tone === 'neutral' ? 'Usá un tono neutro y directo.' : 'Usá un tono amigable y cercano.'}
 
-Reglas importantes:
-- Respondé siempre en ${chatbotConfig.language}
-- Mantené el tono ${chatbotConfig.tone} en todo momento
-- Si no sabés algo, decí que vas a consultar con el equipo
-- Sé conciso, las respuestas por WhatsApp deben ser cortas y claras
-- No uses markdown ni asteriscos en las respuestas
+Reglas que siempre debés seguir:
+- Respondé siempre en español
+- NUNCA saludes en cada mensaje. Solo saludá una vez al inicio. Si el cliente ya escribió antes, respondé directo a su consulta sin decir "Hola" ni "Buenos días"
+- Si no tenés información específica sobre algo, decí: "No tengo esa información disponible, te comunico con un asesor" — nunca inventes datos
+- Respuestas cortas y claras, estás en WhatsApp
+- Sin markdown, sin asteriscos, sin listas con guiones
+- Sin exclamaciones exageradas
       `.trim();
 
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
