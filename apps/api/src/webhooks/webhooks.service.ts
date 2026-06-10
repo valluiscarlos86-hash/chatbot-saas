@@ -82,7 +82,9 @@ export class WebhooksService {
         LIMIT 1
       `)
 
-      const config = configResult.rows?.[0]
+const configRows = configResult.rows || configResult
+      const config = (configRows as any[])?.[0]
+      
 
 // 2 — Buscar historial de conversación (solo si tenemos org_id)
 let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
@@ -118,11 +120,12 @@ if (config?.org_id) {
           : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
       }
 
-      // 4 — Llamar a OpenAI
+      // 4 — Llamar a OpenAI (con búsqueda en documentos del negocio)
       const aiResponse = await this.aiService.generateResponse(
         text,
         chatbotConfig,
         conversationHistory,
+        config?.org_id,
       )
 
       // 5 — Enviar respuesta por WhatsApp

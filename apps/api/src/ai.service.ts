@@ -1,15 +1,55 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import OpenAI from 'openai';
+import { DATABASE_CONNECTION } from './database/database.module';
+import { sql } from 'drizzle-orm';
 
 @Injectable()
 export class AiService {
   private openai: OpenAI;
   private readonly logger = new Logger(AiService.name);
 
-  constructor() {
+  constructor(@Inject(DATABASE_CONNECTION) private db: any) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+  }
+
+  // Convierte un texto en un vector de 1536 números (embedding)
+  async generateEmbedding(text: string): Promise<number[]> {
+    const response = await this.openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return response.data[0].embedding;
+  }
+
+  // Busca los chunks más relevantes en los documentos de una empresa
+  async searchRelevantChunks(query: string, orgId: string): Promise<string[]> {
+    try {
+      // 1 — Convertir la pregunta del cliente en vector
+      const queryEmbedding = await this.generateEmbedding(query);
+      const vectorString = `[${queryEmbedding.join(',')}]`;
+
+      // 2 — Buscar los 4 chunks más parecidos, SIEMPRE filtrando por org_id
+      const result = await this.db.execute(sql`
+        SELECT chunk_text,
+               1 - (embedding <=> ${vectorString}::vector) AS similarity
+        FROM embeddings
+        WHERE org_id = ${orgId}
+          AND 1 - (embedding <=> ${vectorString}::vector) > 0.3
+        ORDER BY embedding <=> ${vectorString}::vector
+        LIMIT 4
+      `);
+
+      const rows = result.rows || result;
+      const chunks = (rows as any[]).map((row) => row.chunk_text);
+
+      this.logger.log(`Encontrados ${chunks.length} chunks relevantes para: "${query}"`);
+      return chunks;
+    } catch (error) {
+      this.logger.error('Error buscando chunks:', error);
+      return [];
+    }
   }
 
   async generateResponse(
@@ -21,19 +61,34 @@ export class AiService {
       systemPrompt: string;
     },
     conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+    orgId?: string,
   ): Promise<string> {
     try {
-    const systemMessage = `
+      // Buscar contexto relevante en los documentos (si hay orgId)
+      let knowledgeContext = '';
+      if (orgId) {
+        const chunks = await this.searchRelevantChunks(userMessage, orgId);
+        if (chunks.length > 0) {
+          knowledgeContext = `
+
+Información del negocio (usá esto para responder):
+${chunks.map((c, i) => `[${i + 1}] ${c}`).join('\n\n')}`;
+        }
+      }
+
+      const systemMessage = `
 Sos ${chatbotConfig.botName}, un asistente de atención al cliente de ${chatbotConfig.botName}.
 
 ${chatbotConfig.systemPrompt}
 
 Instrucciones específicas del negocio:
 ${chatbotConfig.tone === 'formal' ? 'Usá un tono formal y profesional.' : chatbotConfig.tone === 'neutral' ? 'Usá un tono neutro y directo.' : 'Usá un tono amigable y cercano.'}
+${knowledgeContext}
 
 Reglas que siempre debés seguir:
 - Respondé siempre en español
 - NUNCA saludes en cada mensaje. Solo saludá una vez al inicio. Si el cliente ya escribió antes, respondé directo a su consulta sin decir "Hola" ni "Buenos días"
+- Usá la información del negocio de arriba para responder. Si la respuesta está ahí, respondé con esos datos.
 - Si no tenés información específica sobre algo, decí: "No tengo esa información disponible, te comunico con un asesor" — nunca inventes datos
 - Respuestas cortas y claras, estás en WhatsApp
 - Sin markdown, sin asteriscos, sin listas con guiones
@@ -63,7 +118,6 @@ Reglas que siempre debés seguir:
 
       this.logger.log(`Respuesta generada: "${response}"`);
       return response;
-
     } catch (error) {
       this.logger.error('Error al llamar a OpenAI:', error);
       return 'Lo siento, estoy teniendo dificultades técnicas en este momento. Un agente te contactará pronto.';
