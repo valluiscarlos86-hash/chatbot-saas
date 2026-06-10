@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
+  Param,
   UploadedFile,
   UseInterceptors,
   Body,
@@ -83,5 +85,20 @@ await parser.destroy();
     this.documentsService.processDocument(documentId, orgId, text);
 
     return { success: true, documentId, message: 'Documento recibido, procesando...' };
+  }
+
+  @Delete(':id')
+  async deleteDocument(@Param('id') id: string) {
+    // Borrar embeddings del documento
+    await this.db.execute(sql`
+      DELETE FROM embeddings WHERE document_id = ${id}
+    `);
+
+    // Borrar el documento
+    await this.db.execute(sql`
+      DELETE FROM knowledge_documents WHERE id = ${id}
+    `);
+
+    return { success: true };
   }
 }
