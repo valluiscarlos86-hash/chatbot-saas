@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module'
 import { OrganizationsModule } from './organizations/organizations.module'
 import { WebhooksModule } from './webhooks/webhooks.module'
 import { DocumentsModule } from './documents.module'
+import { AiModule } from './ai.module'
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DocumentsModule } from './documents.module'
     OrganizationsModule,
     WebhooksModule,
     DocumentsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
