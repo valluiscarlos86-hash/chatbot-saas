@@ -61,83 +61,123 @@ export class WebhooksService {
 
     const from = message.from
     const text = message.text?.body
+    const phoneNumberId = changes?.value?.metadata?.phone_number_id || 'unknown'
 
     if (!text) return { received: true }
 
     console.log(`Mensaje de ${from}: ${text}`)
 
-    try {
-      // 1 — Buscar la organización y su config de chatbot
-      const configResult = await this.db.execute(sql`
-        SELECT 
-          o.id as org_id,
-          cc.bot_name,
-          cc.bot_tone,
-          cc.business_name,
-          cc.business_description,
-          cc.welcome_message,
-          cc.escalation_rules
-        FROM organizations o
-        LEFT JOIN chatbot_configs cc ON cc.org_id = o.id
-        LIMIT 1
+    // 1 — Buscar la organización y su config de chatbot
+    const configResult = await this.db.execute(sql`
+      SELECT
+        o.id as org_id,
+        cc.bot_name,
+        cc.bot_tone,
+        cc.business_name,
+        cc.business_description,
+        cc.escalation_rules
+      FROM organizations o
+      LEFT JOIN chatbot_configs cc ON cc.org_id = o.id
+      LIMIT 1
+    `)
+    const configRows = configResult.rows || configResult
+    const config = (configRows as any[])?.[0]
+
+    if (!config?.org_id) return { received: true }
+    const orgId = config.org_id
+
+    // 2 — Upsert whatsapp_account (crear si no existe para este phone_number_id)
+    const waResult = await this.db.execute(sql`
+      SELECT id FROM whatsapp_accounts
+      WHERE phone_number_id = ${phoneNumberId} AND org_id = ${orgId}
+      LIMIT 1
+    `)
+    const waRows = waResult.rows || waResult
+    let whatsappAccountId = (waRows as any[])[0]?.id
+
+    if (!whatsappAccountId) {
+      const insertWa = await this.db.execute(sql`
+        INSERT INTO whatsapp_accounts (org_id, phone_number, phone_number_id, access_token, is_active)
+        VALUES (${orgId}, ${phoneNumberId}, ${phoneNumberId}, 'auto', true)
+        RETURNING id
       `)
+      const insertWaRows = insertWa.rows || insertWa
+      whatsappAccountId = (insertWaRows as any[])[0]?.id
+    }
 
-const configRows = configResult.rows || configResult
-      const config = (configRows as any[])?.[0]
-      
-
-// 2 — Buscar historial de conversación (solo si tenemos org_id)
-let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
-
-if (config?.org_id) {
-  const historyResult = await this.db.execute(sql`
-    SELECT role, content
-    FROM messages
-    WHERE conversation_id IN (
+    // 3 — Upsert conversation (crear o reusar la conversación activa del cliente)
+    const convResult = await this.db.execute(sql`
       SELECT id FROM conversations
-      WHERE org_id = ${config.org_id}
-      AND customer_phone = ${from}
+      WHERE org_id = ${orgId} AND customer_phone = ${from} AND status != 'closed'
       ORDER BY created_at DESC
       LIMIT 1
-    )
-    ORDER BY created_at ASC
-    LIMIT 10
-  `)
+    `)
+    const convRows = convResult.rows || convResult
+    let conversationId = (convRows as any[])[0]?.id
 
-  conversationHistory = (historyResult.rows || []).map((row: any) => ({
-    role: row.role as 'user' | 'assistant',
-    content: row.content,
-  }))
-}
+    if (!conversationId) {
+      const insertConv = await this.db.execute(sql`
+        INSERT INTO conversations (org_id, whatsapp_account_id, customer_phone, status)
+        VALUES (${orgId}, ${whatsappAccountId}, ${from}, 'bot_active')
+        RETURNING id
+      `)
+      const insertConvRows = insertConv.rows || insertConv
+      conversationId = (insertConvRows as any[])[0]?.id
+    } else {
+      await this.db.execute(sql`
+        UPDATE conversations SET updated_at = NOW() WHERE id = ${conversationId}
+      `)
+    }
 
-      // 3 — Armar config del chatbot con los nombres reales de columnas
-      const chatbotConfig = {
-        botName: config?.bot_name || 'Asistente',
-        tone: config?.bot_tone || 'amigable',
-        language: 'español',
-        systemPrompt: config?.business_description
-          ? `Sos el asistente de ${config.business_name || 'esta empresa'}. ${config.business_description}. ${config.escalation_rules ? 'Reglas de escalada: ' + config.escalation_rules : ''}`
-          : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
-      }
+    // 4 — Buscar historial de conversación
+    const historyResult = await this.db.execute(sql`
+      SELECT role, content
+      FROM messages
+      WHERE conversation_id = ${conversationId}
+      ORDER BY created_at ASC
+      LIMIT 10
+    `)
+    const conversationHistory = (historyResult.rows || []).map((row: any) => ({
+      role: row.role as 'user' | 'assistant',
+      content: row.content,
+    }))
 
-      // 4 — Llamar a OpenAI (con búsqueda en documentos del negocio)
-      const aiResponse = await this.aiService.generateResponse(
+    // 5 — Armar config del chatbot
+    const chatbotConfig = {
+      botName: config.bot_name || 'Asistente',
+      tone: config.bot_tone || 'amigable',
+      language: 'español',
+      systemPrompt: config.business_description
+        ? `Sos el asistente de ${config.business_name || 'esta empresa'}. ${config.business_description}. ${config.escalation_rules ? 'Reglas de escalada: ' + config.escalation_rules : ''}`
+        : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
+    }
+
+    // 6 — Llamar a OpenAI con RAG
+    let aiResponse: string
+    try {
+      aiResponse = await this.aiService.generateResponse(
         text,
         chatbotConfig,
         conversationHistory,
-        config?.org_id,
+        orgId,
       )
-
-      // 5 — Enviar respuesta por WhatsApp
-      await this.sendWhatsappMessage(from, aiResponse)
-
     } catch (error) {
-      console.error('Error procesando mensaje:', error)
-      await this.sendWhatsappMessage(
-        from,
-        'Lo siento, estoy teniendo dificultades técnicas. Un agente te contactará pronto.'
-      )
+      console.error('Error al llamar a OpenAI:', error)
+      aiResponse = 'Lo siento, estoy teniendo dificultades técnicas. Un agente te contactará pronto.'
     }
+
+    // 7 — Guardar mensaje entrante (user)
+    await this.db.execute(sql`
+      INSERT INTO messages (conversation_id, org_id, role, content)
+      VALUES (${conversationId}, ${orgId}, 'user', ${text})
+    `)
+
+    // 8 — Enviar por WhatsApp y guardar respuesta (assistant)
+    await this.sendWhatsappMessage(from, aiResponse)
+    await this.db.execute(sql`
+      INSERT INTO messages (conversation_id, org_id, role, content)
+      VALUES (${conversationId}, ${orgId}, 'assistant', ${aiResponse})
+    `)
 
     return { received: true }
   }

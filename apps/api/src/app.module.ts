@@ -7,6 +7,7 @@ import { OrganizationsModule } from './organizations/organizations.module'
 import { WebhooksModule } from './webhooks/webhooks.module'
 import { DocumentsModule } from './documents.module'
 import { AiModule } from './ai.module'
+import { ConversationsModule } from './conversations/conversations.module'
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AiModule } from './ai.module'
     WebhooksModule,
     DocumentsModule,
     AiModule,
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
