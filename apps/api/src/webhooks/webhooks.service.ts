@@ -62,10 +62,11 @@ export class WebhooksService {
     const from = message.from
     const text = message.text?.body
     const phoneNumberId = changes?.value?.metadata?.phone_number_id || 'unknown'
+    const contactName: string | null = changes?.value?.contacts?.[0]?.profile?.name ?? null
 
     if (!text) return { received: true }
 
-    console.log(`Mensaje de ${from}: ${text}`)
+    console.log(`Mensaje de ${from} (${contactName ?? 'sin nombre'}): ${text}`)
 
     // 1 — Buscar la organización y su config de chatbot
     const configResult = await this.db.execute(sql`
@@ -86,7 +87,7 @@ export class WebhooksService {
     if (!config?.org_id) return { received: true }
     const orgId = config.org_id
 
-    // 2 — Upsert whatsapp_account (crear si no existe para este phone_number_id)
+    // 2 — Upsert whatsapp_account
     const waResult = await this.db.execute(sql`
       SELECT id FROM whatsapp_accounts
       WHERE phone_number_id = ${phoneNumberId} AND org_id = ${orgId}
@@ -105,31 +106,48 @@ export class WebhooksService {
       whatsappAccountId = (insertWaRows as any[])[0]?.id
     }
 
-    // 3 — Upsert conversation (crear o reusar la conversación activa del cliente)
+    // 3 — Upsert conversation (incluye status para el handoff check)
     const convResult = await this.db.execute(sql`
-      SELECT id FROM conversations
+      SELECT id, status FROM conversations
       WHERE org_id = ${orgId} AND customer_phone = ${from} AND status != 'closed'
       ORDER BY created_at DESC
       LIMIT 1
     `)
     const convRows = convResult.rows || convResult
-    let conversationId = (convRows as any[])[0]?.id
+    const existingConv = (convRows as any[])[0]
+    let conversationId = existingConv?.id
+    let conversationStatus: string = existingConv?.status ?? 'bot_active'
 
     if (!conversationId) {
       const insertConv = await this.db.execute(sql`
-        INSERT INTO conversations (org_id, whatsapp_account_id, customer_phone, status)
-        VALUES (${orgId}, ${whatsappAccountId}, ${from}, 'bot_active')
+        INSERT INTO conversations (org_id, whatsapp_account_id, customer_phone, customer_name, status)
+        VALUES (${orgId}, ${whatsappAccountId}, ${from}, ${contactName}, 'bot_active')
         RETURNING id
       `)
       const insertConvRows = insertConv.rows || insertConv
       conversationId = (insertConvRows as any[])[0]?.id
+      conversationStatus = 'bot_active'
     } else {
+      // Actualizar updated_at y rellenar customer_name solo si todavía es NULL
       await this.db.execute(sql`
-        UPDATE conversations SET updated_at = NOW() WHERE id = ${conversationId}
+        UPDATE conversations
+        SET updated_at = NOW(),
+            customer_name = COALESCE(customer_name, ${contactName})
+        WHERE id = ${conversationId}
       `)
     }
 
-    // 4 — Buscar historial de conversación
+    // Handoff: si la conversación está tomada por un agente, solo guardar el mensaje
+    if (conversationStatus === 'human_takeover') {
+      console.log(`Conversación ${conversationId} en human_takeover — guardando mensaje sin responder`)
+      await this.db.execute(sql`
+        INSERT INTO messages (conversation_id, org_id, role, content)
+        VALUES (${conversationId}, ${orgId}, 'user', ${text})
+      `)
+      return { received: true }
+    }
+
+    // 4 — Buscar historial de conversación (solo para bot_active)
     const historyResult = await this.db.execute(sql`
       SELECT role, content
       FROM messages

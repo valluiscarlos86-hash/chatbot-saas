@@ -123,4 +123,31 @@ Reglas que siempre debés seguir:
       return 'Lo siento, estoy teniendo dificultades técnicas en este momento. Un agente te contactará pronto.';
     }
   }
+
+  async generateSummary(
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  ): Promise<string> {
+    const transcript = messages
+      .map(m => `${m.role === 'user' ? 'Cliente' : 'Bot'}: ${m.content}`)
+      .join('\n');
+
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Resumí esta conversación para un agente que la va a atender ahora. Indicá: qué quiere el cliente, qué se le respondió, en qué quedó la conversación, y qué necesita el agente hacer ahora. Máximo 4 líneas, directo y útil. Respondé en español.',
+        },
+        { role: 'user', content: transcript },
+      ],
+      max_tokens: 300,
+      temperature: 0.3,
+    });
+
+    const response = completion.choices[0]?.message?.content;
+    if (!response) throw new Error('OpenAI devolvió una respuesta vacía');
+    this.logger.log('Resumen generado para conversación');
+    return response;
+  }
 }
