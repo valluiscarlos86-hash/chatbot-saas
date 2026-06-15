@@ -21,13 +21,12 @@ interface Message {
   created_at: string
 }
 
-type Filter = 'all' | 'bot_active' | 'human_takeover' | 'closed'
+type Filter = 'all' | 'open' | 'closed'
 
 const FILTER_LABELS: Record<Filter, string> = {
-  all: 'Todas',
-  bot_active: 'Activas',
-  human_takeover: 'Humano',
-  closed: 'Cerradas',
+  all: 'Todos',
+  open: 'Abierto',
+  closed: 'Cerrado',
 }
 
 const STATUS_STYLE: Record<Conversation['status'], { label: string; cls: string }> = {
@@ -122,7 +121,8 @@ export default function ConversationsPage() {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   const filteredConvs = conversations.filter(c => {
-    if (filter !== 'all' && c.status !== filter) return false
+    if (filter === 'open' && c.status === 'closed') return false
+    if (filter === 'closed' && c.status !== 'closed') return false
     if (convSearch) {
       const q = convSearch.toLowerCase()
       return c.customer_phone.includes(q) || (c.customer_name?.toLowerCase().includes(q) ?? false)
