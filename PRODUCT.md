@@ -1,7 +1,7 @@
 # AtentIA — Documento de Producto
 
 > Plataforma SaaS de atención al cliente con IA para WhatsApp y web.
-> Versión del documento: 1.0 — Mayo 2026
+> Versión del documento: 2.0 — Junio 2026
 
 ---
 
@@ -17,200 +17,263 @@ Cuando la consulta es compleja o el cliente pide hablar con una persona, el bot 
 
 Suscripción mensual por empresa según volumen de mensajes:
 
-| Plan | Mensajes/mes | Precio estimado | Agentes |
-|------|-------------|-----------------|---------|
-| Free (prueba) | 150 | $0 | 1 |
+| Plan | Mensajes/mes | Precio | Agentes |
+|------|-------------|--------|---------|
+| Free (prueba 7 días) | 150 | $0 | 1 |
 | Basic | 1.000 | $29 USD | 2 |
 | Pro | 5.000 | $79 USD | 5 |
 | Enterprise | Ilimitado | A convenir | Ilimitado |
 
 Período de prueba: 7 días gratuitos, extensible manualmente por el equipo de AtentIA.
 
+> Tools / integraciones externas (Nivel 3 del producto) son una feature de plan alto — 5-10× el precio base. Ver `ESTRATEGIA.md`.
+
 ---
 
-## Fase 1 — Fundaciones (completada)
+## Fase 1 — Fundaciones ✅ Completada
 
 - Monorepo con pnpm workspaces y Turborepo
-- Frontend Next.js 15 + TypeScript + Tailwind CSS
+- Frontend Next.js 16 + TypeScript + Tailwind CSS
 - Backend NestJS + TypeScript
-- Docker local con PostgreSQL (pgvector) + Redis
+- Docker local con PostgreSQL (pgvector 0.8.2) + Redis
 - Autenticación con Clerk (login, registro, sesiones)
-- Schema de base de datos con Drizzle ORM (5 tablas)
+- Schema de base de datos con Drizzle ORM (7 tablas)
 - Migraciones versionadas
 - Webhook de Clerk → crea organización automáticamente en PostgreSQL
 - Período de prueba automático de 7 días al registrarse
+- Dashboard con 7 páginas
 - Todo versionado en GitHub
 
 ---
 
-## Fase 2 — Core del producto (en construcción)
+## Fase 2 — Core del producto ✅ Completada
 
-### 2.1 Dashboard principal
+### 2.1 Página de inicio
 
-Página de inicio post-login con:
-
-- Bienvenida personalizada con nombre del usuario
+- Saludo personalizado con nombre del usuario (via Clerk)
 - Badge de período de prueba con días restantes
-- Métricas clave: mensajes usados, conversaciones activas, documentos subidos
-- Conversaciones recientes con estado (bot activo / esperando humano / cerrada)
-- Accesos rápidos: conectar WhatsApp, subir documento, configurar bot
+- Métricas reales desde la DB: mensajes este mes, conversaciones activas, documentos listos
+- Conversaciones recientes con avatar de iniciales, preview del último mensaje y dot de estado
+- "Ver todas" enlaza al panel de conversaciones
 
 ### 2.2 Panel de conversaciones
 
-Vista dividida en dos paneles:
+Vista dividida en dos paneles, estilo WhatsApp Web:
 
 **Panel izquierdo — lista de conversaciones**
-- Listado ordenado por más reciente
+- Listado ordenado por más reciente, con datos reales de la DB
 - Buscador por nombre de cliente o número de teléfono
-- Filtros por estado: todas, activas, esperando humano, cerradas
-- Etiquetas configurables por la empresa (venta, soporte, reclamo, etc.)
-- Indicador visual de estado por conversación
+- Filtros por estado: Todos / Abierto (bot_active + human_takeover) / Cerrado
+- Preview del último mensaje (filtrando mensajes de sistema)
+- Captura automática del nombre de perfil de WhatsApp del contacto
 
 **Panel derecho — hilo de mensajes**
-- Mensajes del cliente y respuestas del bot diferenciados visualmente
-- Indicador de qué mensajes respondió el bot vs un humano
-- Botón "Ver contexto" (ícono de libro) — muestra los chunks del documento que usó el bot para responder esa pregunta
-- Botones de acción:
-  - Pausar bot / Tomar control
-  - Reactivar bot
-  - Cerrar conversación
-- Caja de texto para que el agente escriba y envíe mensajes directamente por WhatsApp
-- Notas internas visibles solo para el equipo, no para el cliente
+- Burbujas diferenciadas: verde (cliente), blanco (bot/agente), pill gris centrada (sistema)
+- Separadores de fecha entre días
+- Log de eventos del sistema: "Conversación tomada por un agente", "Bot reactivado", "Conversación cerrada"
+- Horario en cada mensaje
 
-### 2.3 Panel de agente / knowledge base
+**Barra de acciones**
+- Botón contextual por estado: "Tomar control" / "Reactivar bot" / "Cerrar"
+- Búsqueda de mensajes en el hilo actual (filtro client-side)
+- Toggle de panel de info del contacto
+- Botón de resumen con IA (ícono varita/sparkles)
 
-El corazón del producto. Donde la empresa configura su chatbot:
+**Resumen con IA (on-demand)**
+- Generado al instante cuando el agente lo pide, sin persistir en DB
+- Muestra: qué quiere el cliente, qué se le respondió, en qué quedó, qué necesita el agente hacer ahora
+- Cuadro destacado con fondo violeta, arriba del hilo de mensajes
+- Excluye mensajes de sistema del resumen
+
+**Panel de info del contacto (toggle)**
+- Teléfono, nombre, fecha de inicio de conversación, estado actual
+- Nota interna (textarea, guarda on-blur, solo visible en el dashboard, nunca al cliente)
+- Persistida en `conversations.metadata.internal_note` (jsonb merge, no pisa otras claves)
+
+**Barra de respuesta del agente**
+- Solo visible cuando el status es `human_takeover`
+- Fondo ámbar para diferenciarla visualmente
+- Enter para enviar, envía por WhatsApp y guarda en la DB
+
+### 2.3 Handoff a humano
+
+- Cuando el agente toca "Tomar control": status → `human_takeover`, el bot deja de responder
+- Mientras está en `human_takeover`: el webhook guarda el mensaje del cliente pero NO llama a OpenAI
+- El agente responde desde el dashboard; el mensaje se envía por WhatsApp y se guarda como `role: assistant`
+- "Reactivar bot": status → `bot_active`, el bot vuelve a responder normalmente
+- "Cerrar": status → `closed`
+- Cada cambio de estado inserta un mensaje `role: system` con texto descriptivo visible en el hilo
+
+### 2.4 Configuración del chatbot
 
 **Mi empresa**
 - Nombre del negocio
-- Descripción del negocio (contexto para el bot)
-- Datos de contacto e información adicional
+- Descripción (contexto para el bot)
+- Datos de contacto
+
+**Mi bot**
+- Nombre del bot
+- Tono de respuesta (amigable, formal, neutro)
+- Mensaje de bienvenida
 
 **Instrucciones al bot**
-- Nombre del bot (ej: "Asistente de TiendaRopa")
-- Tono de respuesta: formal, amigable, neutro
-- Idioma principal
-- Reglas de escalada: cuándo derivar a humano
-- Horario de atención (fuera de horario avisa automáticamente)
-- Mensaje de bienvenida personalizado
+- Reglas de escalada (cuándo derivar a humano)
+- Horario de atención
 
-**Base de conocimiento**
-- Upload de documentos: PDF, Word, TXT
-- Estado de procesamiento: pendiente, procesando, listo, error
-- Visualización de chunks generados por documento
-- Eliminar documentos
+**Chat de prueba integrado**
+- Segunda columna a la derecha del formulario de config
+- Chat en vivo que usa el mismo pipeline RAG que WhatsApp
+- Burbujas diferenciadas, indicador de "escribiendo" (tres puntos animados)
+- Enter para enviar
 
-**Testear el bot**
-- Chat de prueba en tiempo real dentro del panel
-- Cada respuesta muestra el ícono de libro para ver el contexto utilizado
-- Permite iterar el conocimiento sin esperar mensajes reales
+### 2.5 Documentos (knowledge base)
 
-### 2.4 Integración WhatsApp
+- Upload drag & drop de PDF y TXT (máximo 10MB)
+- Procesamiento automático: extracción de texto → chunking (500 palabras, 50 overlap) → embeddings OpenAI
+- Estado en tiempo real con polling (Pendiente → Procesando → Listo / Error)
+- Lista de documentos con tamaño, cantidad de chunks, estado
+- Eliminar documento (borra el documento y todos sus embeddings)
 
-- Conexión con Meta WhatsApp Business API
-- Recepción de mensajes entrantes vía webhook
-- Envío de respuestas del bot y del agente
-- Soporte para múltiples números por organización (planes Pro y Enterprise)
+### 2.6 Pipeline de IA (RAG)
 
-### 2.5 Pipeline de IA (RAG)
+- Modelo de embeddings: `text-embedding-3-small` (vector 1536)
+- Almacenamiento: pgvector con extensión activada en PostgreSQL
+- Búsqueda: cosine similarity, threshold > 0.3, LIMIT 4 chunks
+- LLM: GPT-4o-mini
+- El bot usa el historial de la conversación + chunks relevantes para responder
+- No inventa información: si no tiene datos, lo dice y deriva
 
-- Procesamiento de documentos: extracción, chunking, embeddings
-- Búsqueda semántica con pgvector
-- Llamada a LLM (GPT-4o-mini para consultas simples, GPT-4o para complejas)
-- Memoria conversacional en Redis
-- Caché semántico para reducir costos (25-35% estimado)
-- Control de presupuesto de tokens por organización
+### 2.7 Configuración de cuenta
 
-### 2.6 Widget embebible para web
+- Edición de nombre (actualiza Clerk via server action + revalida el path del dashboard)
+- Email de solo lectura
+- Plan actual visible con límites
+- Cerrar sesión
 
-Un pequeño script que las empresas pegan en su sitio web:
+---
+
+## Fase 3 — Salida al mercado 🔄 En progreso
+
+### 3.1 Integraciones WhatsApp ← próximo
+
+Formulario para que cada empresa conecte su propio número desde el dashboard:
+- Phone Number ID
+- Access Token
+- Business Account ID de Meta
+
+Primera etapa: manual asistido (AtentIA ayuda a los primeros clientes). Etapa futura: Embedded Signup automático.
+
+### 3.2 Deploy a producción
+
+- Frontend en Vercel
+- Backend en Railway
+- PostgreSQL en Railway (migración a Neon cuando el volumen lo justifique)
+- Redis en Railway
+- Variables de entorno en los dashboards de cada servicio
+
+### 3.3 Billing
+
+- Planes y suscripciones
+- Medio de pago a definir para LatAm (Mercado Pago / dLocal / Stripe con adaptación)
+- Límites automáticos según plan
+- Alertas al acercarse al límite mensual
+
+### 3.4 Killer features de ventas (baja complejidad, alto impacto)
+
+Ver detalle completo en `ESTRATEGIA.md`.
+
+**Modo borrador / aprobación**
+El bot redacta la respuesta pero no la envía hasta que el dueño aprueba desde el celular. Ataca el miedo a la alucinación. Gancho de onboarding.
+
+**Reporte semanal por WhatsApp**
+Mensaje automático al dueño cada semana: consultas respondidas, derivaciones, preguntas más frecuentes. Reduce churn.
+
+**Detección de lead caliente**
+Notificación al dueño cuando el cliente dice "quiero comprarlo", "cómo pago", etc. Convierte consultas en ventas.
+
+---
+
+## Fase 4 — Expansión vertical
+
+### Nivel 2 — Sistema de turnos propio
+
+Calendario de disponibilidad nativo en el dashboard. La empresa define sus horarios, el bot agenda turnos directamente sin integraciones externas.
+
+Mercado objetivo: peluquerías, consultorios médicos, estudios de tatuajes, talleres mecánicos.
+
+### Nivel 3 — Tools / integraciones externas
+
+Function calling + integración con sistemas externos vía API. El bot ejecuta acciones reales en sistemas de terceros.
+
+Mercado objetivo: hospitales, municipios, concesionarias, empresas con sistemas legacy.
+
+Aspiracional: Municipalidad de Cosquín (turnos de carnet, automatización de reclamos).
+
+> Regla: no construir Nivel 3 antes de tener Nivel 2 con clientes reales pagando. La arquitectura de tools es la misma para todos los casos.
+
+### Widget web embebible
+
+Script que las empresas pegan en su sitio:
 
 ```html
 <script src="https://cdn.atentia.app/widget.js" data-org="tu-org-id"></script>
 ```
 
-Aparece un botón de chat en la esquina inferior derecha. El cliente puede chatear directamente desde la web sin abrir WhatsApp. Las conversaciones se unifican en el panel de AtentIA.
+Aparece un botón de chat en la esquina inferior derecha. Las conversaciones se unifican en el panel de AtentIA.
 
----
-
-## Fase 3 — Escala y negocio
-
-### 3.1 Billing con Stripe
-
-- Planes de suscripción mensual
-- Upgrade y downgrade de plan
-- Historial de facturación
-- Límites automáticos según plan
-- Alertas cuando el cliente se acerca al límite mensual
-
-### 3.2 Analítica
+### Analítica
 
 - Porcentaje de consultas resueltas por el bot sin intervención humana
 - Tiempo promedio de respuesta
-- Preguntas más frecuentes (wordcloud o ranking)
+- Preguntas más frecuentes
 - Conversaciones por día/semana/mes
-- Performance por agente
 
-### 3.3 Respuestas rápidas
+### Rediseño visual completo
 
-El agente puede guardar respuestas frecuentes y usarlas con un atajo `/` mientras escribe. Ahorra tiempo en consultas repetitivas.
+Sesión dedicada de diseño del dashboard y landing: paleta de marca AtentIA, tipografía, componentes reutilizables, estados vacíos con onboarding.
 
-### 3.4 Panel de administración (super admin)
-
-Para el equipo de AtentIA, no para los clientes:
-
-- Ver todas las organizaciones registradas
-- Extender período de prueba manualmente
-- Cambiar plan de una organización
-- Ver uso de tokens por organización
-- Bloquear organizaciones si es necesario
-
-### 3.5 Deploy a producción
-
-- Frontend en Vercel
-- Backend en Railway con autoscaling
-- PostgreSQL en Railway o Neon
-- Redis en Railway
-- CI/CD con GitHub Actions
+Referencias de diseño: Emil Kowalski, Impeccable Style, Tasteskill.dev.
 
 ---
 
 ## Decisiones de producto tomadas
 
-**Sesión permanente en Clerk** — los usuarios de herramientas de trabajo diarias (como esta) no quieren reingresar su contraseña. Comportamiento correcto para un SaaS B2B.
+**Sesión permanente en Clerk** — comportamiento correcto para un SaaS B2B de uso diario.
 
-**Período de prueba extensible manualmente** — da flexibilidad para cerrar los primeros clientes sin fricción técnica. Cuando el volumen lo justifique, se automatiza con Stripe.
+**Período de prueba extensible manualmente** — flexibilidad para cerrar primeros clientes sin fricción técnica.
 
-**pgvector sobre Pinecone en MVP** — misma base de datos, menos dependencias externas, ahorro de ~$70/mes. Migración posible cuando supere los 5M vectores.
+**pgvector sobre Pinecone en MVP** — menos dependencias, ahorro de ~$70/mes. Migración posible cuando supere 5M vectores.
 
-**BullMQ para el pipeline de mensajes** — el procesamiento de IA es asincrónico. Los mensajes de WhatsApp se encolan y procesan sin bloquear el servidor HTTP.
+**Procesamiento síncrono en MVP** — el pipeline RAG corre dentro del webhook. Simple y suficiente. BullMQ se activa cuando el volumen lo justifique.
 
-**Widget web propio** — diferenciador frente a competidores que solo hacen WhatsApp. Las empresas con sitio web lo van a valorar mucho.
+**Resumen con IA on-demand** — se genera al pedido, no se persiste. No gasta tokens en conversaciones que nadie va a leer.
+
+**Meta WhatsApp Cloud API directa** — sin intermediarios (Twilio/BSP) que agregan costo y latencia.
+
+**Proxy Next.js con Clerk auth** — el frontend nunca llama directo al backend. Centraliza auth y evita CORS.
+
+**Notas internas en `metadata` jsonb** — merge con `||` en vez de sobrescribir, para no pisar otras claves futuras del objeto.
 
 ---
 
 ## Métricas de éxito del MVP
 
 - 10 empresas en período de prueba activo
-- 3 empresas convertidas a plan pago
-- Tasa de resolución del bot > 60% (el bot resuelve más de 6 de cada 10 consultas sin humano)
+- 3 empresas convertidas a plan pago (Plan Fundador)
+- Tasa de resolución del bot > 60%
 - Tiempo de respuesta del bot < 3 segundos
 
 ---
 
+## Features descartadas o pospuestas
 
-### 3.6 Flow Builder visual
+**Flow Builder visual** — constructor de flujos con drag & drop. Pospuesto indefinidamente. AtentIA apuesta a IA generativa que infiere de documentos, no a flujos fijos. Agregar un builder visual contradice el diferencial de simplicidad.
 
-Constructor visual de flujos conversacionales — el cliente puede diseñar árboles de decisión con drag & drop, sin necesidad de programar.
+**Semantic cache** — reducción de costos por caching de respuestas similares. Pospuesto para después de tener volumen suficiente que lo justifique.
 
-- Editor de nodos con conexiones visuales
-- Nodos disponibles: enviar mensaje, esperar respuesta, condición, webhook externo, asignar agente, cerrar conversación
-- Variables de conversación (nombre, teléfono, datos capturados)
-- Webhooks para validar datos contra sistemas externos (ej: validar cliente por DNI/CUIT)
-- Lógica condicional: si respuesta es X → ir a nodo Y
-- Convive con el modo IA — el cliente puede combinar flujos fijos con respuestas inteligentes
-- Prioridad: Fase 3, después de tener clientes pagando
+**BullMQ / cola asincrónica** — preparada en la infra (Redis ya corre), se activa cuando el volumen de mensajes concurrentes lo requiera.
 
+---
 
 *Documento vivo — se actualiza con cada decisión de producto.*
-*Última actualización: Mayo 2026*
+*Última actualización: Junio 2026*
