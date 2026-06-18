@@ -68,43 +68,31 @@ export class WebhooksService {
 
     console.log(`Mensaje de ${from} (${contactName ?? 'sin nombre'}): ${text}`)
 
-    // 1 — Buscar la organización y su config de chatbot
+    // 1 — Buscar la organización dueña de este número de WhatsApp
     const configResult = await this.db.execute(sql`
       SELECT
-        o.id as org_id,
+        wa.org_id,
+        wa.id as whatsapp_account_id,
         cc.bot_name,
         cc.bot_tone,
         cc.business_name,
         cc.business_description,
-        cc.escalation_rules
-      FROM organizations o
-      LEFT JOIN chatbot_configs cc ON cc.org_id = o.id
+        cc.escalation_rules,
+        cc.office_hours
+      FROM whatsapp_accounts wa
+      LEFT JOIN chatbot_configs cc ON cc.org_id = wa.org_id
+      WHERE wa.phone_number_id = ${phoneNumberId} AND wa.is_active = true
       LIMIT 1
     `)
     const configRows = configResult.rows || configResult
     const config = (configRows as any[])?.[0]
 
-    if (!config?.org_id) return { received: true }
-    const orgId = config.org_id
-
-    // 2 — Upsert whatsapp_account
-    const waResult = await this.db.execute(sql`
-      SELECT id FROM whatsapp_accounts
-      WHERE phone_number_id = ${phoneNumberId} AND org_id = ${orgId}
-      LIMIT 1
-    `)
-    const waRows = waResult.rows || waResult
-    let whatsappAccountId = (waRows as any[])[0]?.id
-
-    if (!whatsappAccountId) {
-      const insertWa = await this.db.execute(sql`
-        INSERT INTO whatsapp_accounts (org_id, phone_number, phone_number_id, access_token, is_active)
-        VALUES (${orgId}, ${phoneNumberId}, ${phoneNumberId}, 'auto', true)
-        RETURNING id
-      `)
-      const insertWaRows = insertWa.rows || insertWa
-      whatsappAccountId = (insertWaRows as any[])[0]?.id
+    if (!config?.org_id) {
+      console.warn(`Mensaje de WhatsApp recibido para phone_number_id desconocido: ${phoneNumberId} — descartado`)
+      return { received: true }
     }
+    const orgId = config.org_id
+    const whatsappAccountId = config.whatsapp_account_id
 
     // 3 — Upsert conversation (incluye status para el handoff check)
     const convResult = await this.db.execute(sql`
@@ -168,6 +156,7 @@ export class WebhooksService {
       systemPrompt: config.business_description
         ? `Sos el asistente de ${config.business_name || 'esta empresa'}. ${config.business_description}. ${config.escalation_rules ? 'Reglas de escalada: ' + config.escalation_rules : ''}`
         : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
+      officeHours: config.office_hours || undefined,
     }
 
     // 6 — Llamar a OpenAI con RAG
@@ -191,7 +180,7 @@ export class WebhooksService {
     `)
 
     // 8 — Enviar por WhatsApp y guardar respuesta (assistant)
-    await this.sendWhatsappMessage(from, aiResponse)
+    await this.sendWhatsappMessage(from, aiResponse, whatsappAccountId)
     await this.db.execute(sql`
       INSERT INTO messages (conversation_id, org_id, role, content)
       VALUES (${conversationId}, ${orgId}, 'assistant', ${aiResponse})
@@ -200,13 +189,21 @@ export class WebhooksService {
     return { received: true }
   }
 
-  async sendWhatsappMessage(to: string, message: string) {
-    const token = process.env.WHATSAPP_TOKEN
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
+  async sendWhatsappMessage(to: string, message: string, whatsappAccountId: string) {
+    const waResult = await this.db.execute(sql`
+      SELECT access_token, phone_number_id FROM whatsapp_accounts WHERE id = ${whatsappAccountId} LIMIT 1
+    `)
+    const waRows = waResult.rows || waResult
+    const wa = (waRows as any[])[0]
+
+    if (!wa) {
+      console.error(`No se encontraron credenciales de WhatsApp para whatsapp_account_id ${whatsappAccountId}`)
+      return
+    }
 
     try {
       await axios.post(
-        `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+        `https://graph.facebook.com/v22.0/${wa.phone_number_id}/messages`,
         {
           messaging_product: 'whatsapp',
           to,
@@ -215,7 +212,7 @@ export class WebhooksService {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${wa.access_token}`,
             'Content-Type': 'application/json',
           },
         }

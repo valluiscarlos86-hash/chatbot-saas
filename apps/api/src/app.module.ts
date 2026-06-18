@@ -8,6 +8,7 @@ import { WebhooksModule } from './webhooks/webhooks.module'
 import { DocumentsModule } from './documents.module'
 import { AiModule } from './ai.module'
 import { ConversationsModule } from './conversations/conversations.module'
+import { WhatsappAccountsModule } from './whatsapp-accounts/whatsapp-accounts.module'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ConversationsModule } from './conversations/conversations.module'
     DocumentsModule,
     AiModule,
     ConversationsModule,
+    WhatsappAccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

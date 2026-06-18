@@ -21,7 +21,7 @@ export class AiController {
     }
 
     const configResult = await this.db.execute(sql`
-      SELECT bot_name, bot_tone, business_name, business_description, escalation_rules
+      SELECT bot_name, bot_tone, business_name, business_description, escalation_rules, office_hours
       FROM chatbot_configs
       WHERE org_id = ${orgId}
       LIMIT 1
@@ -37,6 +37,7 @@ export class AiController {
       systemPrompt: config?.business_description
         ? `Sos el asistente de ${config.business_name || 'esta empresa'}. ${config.business_description}. ${config.escalation_rules ? 'Reglas de escalada: ' + config.escalation_rules : ''}`
         : 'Sos un asistente de atención al cliente. Respondé de forma amigable y concisa.',
+      officeHours: config?.office_hours || undefined,
     };
 
     const response = await this.aiService.generateResponse(

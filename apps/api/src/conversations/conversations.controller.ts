@@ -111,18 +111,24 @@ export class ConversationsController {
     if (!conv) return { error: 'Conversación no encontrada' };
     if (conv.status !== 'human_takeover') return { error: 'La conversación no está en modo humano' };
 
-    const token = process.env.WHATSAPP_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const waResult = await this.db.execute(sql`
+      SELECT access_token, phone_number_id FROM whatsapp_accounts
+      WHERE org_id = ${orgId} AND is_active = true LIMIT 1
+    `);
+    const waRows = waResult.rows || waResult;
+    const wa = (waRows as any[])[0];
+    if (!wa) return { error: 'Conectá tu cuenta de WhatsApp desde Integraciones antes de responder' };
+
     try {
       await axios.post(
-        `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+        `https://graph.facebook.com/v22.0/${wa.phone_number_id}/messages`,
         {
           messaging_product: 'whatsapp',
           to: conv.customer_phone,
           type: 'text',
           text: { body: content },
         },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } },
+        { headers: { Authorization: `Bearer ${wa.access_token}`, 'Content-Type': 'application/json' } },
       );
     } catch (error) {
       console.error('Error enviando mensaje del agente:', (error as any)?.response?.data);

@@ -52,6 +52,19 @@ export class AiService {
     }
   }
 
+  private getArgentinaDateTime(): string {
+    return new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date());
+  }
+
   async generateResponse(
     userMessage: string,
     chatbotConfig: {
@@ -59,6 +72,7 @@ export class AiService {
       tone: string;
       language: string;
       systemPrompt: string;
+      officeHours?: string;
     },
     conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
     orgId?: string,
@@ -76,8 +90,15 @@ ${chunks.map((c, i) => `[${i + 1}] ${c}`).join('\n\n')}`;
         }
       }
 
+      const dateTimeContext = `Fecha y hora actual: ${this.getArgentinaDateTime()} (hora de Argentina).`;
+      const officeHoursInstruction = chatbotConfig.officeHours
+        ? `\nHorario de atención del negocio: ${chatbotConfig.officeHours}\nCompará la hora actual contra ese horario para saber si el negocio está abierto o cerrado en este momento, y respondé en consecuencia (no asumas que siempre está abierto).`
+        : '';
+
       const systemMessage = `
 Sos ${chatbotConfig.botName}, un asistente de atención al cliente de ${chatbotConfig.botName}.
+
+${dateTimeContext}${officeHoursInstruction}
 
 ${chatbotConfig.systemPrompt}
 
