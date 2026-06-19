@@ -17,7 +17,7 @@ export class WhatsappAccountsController {
     if (!orgId) return { account: null };
 
     const result = await this.db.execute(sql`
-      SELECT id, phone_number, phone_number_id, business_account_id, access_token, is_active
+      SELECT id, phone_number, phone_number_id, business_account_id, access_token, widget_message, is_active
       FROM whatsapp_accounts
       WHERE org_id = ${orgId}
       LIMIT 1
@@ -32,6 +32,7 @@ export class WhatsappAccountsController {
         phoneNumberId: account.phone_number_id,
         businessAccountId: account.business_account_id,
         accessTokenMasked: maskToken(account.access_token),
+        widgetMessage: account.widget_message || 'Hola, vengo de la web y quiero hacer una consulta',
         isActive: account.is_active,
       },
     };
@@ -46,27 +47,30 @@ export class WhatsappAccountsController {
       phoneNumberId: string;
       accessToken?: string;
       businessAccountId?: string;
+      widgetMessage?: string;
     },
   ) {
-    const { orgId, phoneNumber, phoneNumberId, accessToken, businessAccountId } = body;
+    const { orgId, phoneNumber, phoneNumberId, accessToken, businessAccountId, widgetMessage } = body;
     if (!orgId || !phoneNumber || !phoneNumberId) {
       return { error: 'orgId, phoneNumber y phoneNumberId son requeridos' };
     }
 
     const existing = await this.db.execute(sql`
-      SELECT id, access_token FROM whatsapp_accounts WHERE org_id = ${orgId} LIMIT 1
+      SELECT id, access_token, widget_message FROM whatsapp_accounts WHERE org_id = ${orgId} LIMIT 1
     `);
     const existingRows = existing.rows || existing;
     const existingAccount = (existingRows as any[])[0];
 
     if (existingAccount) {
       const tokenToSave = accessToken && accessToken.trim() !== '' ? accessToken : existingAccount.access_token;
+      const widgetMessageToSave = widgetMessage !== undefined ? widgetMessage : existingAccount.widget_message;
       await this.db.execute(sql`
         UPDATE whatsapp_accounts
         SET phone_number = ${phoneNumber},
             phone_number_id = ${phoneNumberId},
             business_account_id = ${businessAccountId ?? null},
             access_token = ${tokenToSave},
+            widget_message = ${widgetMessageToSave ?? null},
             is_active = true
         WHERE id = ${existingAccount.id}
       `);
@@ -75,8 +79,8 @@ export class WhatsappAccountsController {
         return { error: 'accessToken es requerido para crear una cuenta nueva' };
       }
       await this.db.execute(sql`
-        INSERT INTO whatsapp_accounts (org_id, phone_number, phone_number_id, business_account_id, access_token, is_active)
-        VALUES (${orgId}, ${phoneNumber}, ${phoneNumberId}, ${businessAccountId ?? null}, ${accessToken}, true)
+        INSERT INTO whatsapp_accounts (org_id, phone_number, phone_number_id, business_account_id, access_token, widget_message, is_active)
+        VALUES (${orgId}, ${phoneNumber}, ${phoneNumberId}, ${businessAccountId ?? null}, ${accessToken}, ${widgetMessage ?? null}, true)
       `);
     }
 

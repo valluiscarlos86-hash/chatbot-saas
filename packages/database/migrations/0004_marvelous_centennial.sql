@@ -1,0 +1,1 @@
+ALTER TABLE "whatsapp_accounts" ADD COLUMN "widget_message" text;

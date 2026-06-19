@@ -30,6 +30,7 @@ export const whatsappAccounts = pgTable('whatsapp_accounts', {
   phoneNumberId: text('phone_number_id').notNull(),
   accessToken: text('access_token').notNull(),
   businessAccountId: text('business_account_id'),
+  widgetMessage: text('widget_message'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
