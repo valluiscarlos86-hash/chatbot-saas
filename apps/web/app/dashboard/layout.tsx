@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -17,10 +18,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-background">
       <aside className="w-56 min-w-56 bg-[#111827] flex flex-col">
-        <div className="px-4 py-5 text-white font-bold text-lg">
-          Atent<span className="text-[#10B981]">IA</span>
+        <div className="px-4 py-5 text-white font-bold text-lg flex items-center justify-between">
+          <span>
+            Atent<span className="text-[#10B981]">IA</span>
+          </span>
+          <ThemeToggle />
         </div>
         <nav className="flex-1 px-2 flex flex-col gap-1">
           {navItems.map((item) => {
@@ -41,6 +45,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
         <div className="p-3 border-t border-[#1F2937]">
+          <a
+            href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}?text=${encodeURIComponent('Hola, tengo una consulta sobre AtentIA')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-2 transition-colors text-gray-400 hover:bg-[#1F2937] hover:text-white"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="12" y1="17" x2="12" y2="17" strokeLinecap="round" />
+            </svg>
+            Soporte
+          </a>
           <Link
             href="/dashboard/settings"
             className={`px-3 py-2 rounded-lg text-sm block mb-2 transition-colors ${

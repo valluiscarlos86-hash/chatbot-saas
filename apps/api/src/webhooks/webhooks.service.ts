@@ -94,10 +94,10 @@ export class WebhooksService {
     const orgId = config.org_id
     const whatsappAccountId = config.whatsapp_account_id
 
-    // 3 — Upsert conversation (incluye status para el handoff check)
+    // 3 — Upsert conversation: una sola conversación por org_id + customer_phone
     const convResult = await this.db.execute(sql`
       SELECT id, status FROM conversations
-      WHERE org_id = ${orgId} AND customer_phone = ${from} AND status != 'closed'
+      WHERE org_id = ${orgId} AND customer_phone = ${from}
       ORDER BY created_at DESC
       LIMIT 1
     `)
@@ -114,6 +114,20 @@ export class WebhooksService {
       `)
       const insertConvRows = insertConv.rows || insertConv
       conversationId = (insertConvRows as any[])[0]?.id
+      conversationStatus = 'bot_active'
+    } else if (conversationStatus === 'closed') {
+      // Reabrir conversación cerrada en vez de crear una nueva, preservando el historial
+      await this.db.execute(sql`
+        UPDATE conversations
+        SET status = 'bot_active',
+            updated_at = NOW(),
+            customer_name = COALESCE(customer_name, ${contactName})
+        WHERE id = ${conversationId}
+      `)
+      await this.db.execute(sql`
+        INSERT INTO messages (conversation_id, org_id, role, content)
+        VALUES (${conversationId}, ${orgId}, 'system', 'Conversación reabierta')
+      `)
       conversationStatus = 'bot_active'
     } else {
       // Actualizar updated_at y rellenar customer_name solo si todavía es NULL

@@ -2,12 +2,18 @@
 
 import { useState } from 'react'
 import { SignOutButton } from '@clerk/nextjs'
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { updateAccountName } from './actions'
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   firstName: string | null
   email: string | null
 }
+
+const inputClasses =
+  'w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-subtle-foreground focus:outline-none focus:border-accent transition-colors duration-200'
 
 export default function SettingsForm({ firstName, email }: Props) {
   const [saving, setSaving] = useState(false)
@@ -24,60 +30,54 @@ export default function SettingsForm({ firstName, email }: Props) {
   return (
     <>
       {saved && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center gap-2">
-          <span className="text-emerald-600 text-sm">✓</span>
-          <span className="text-sm text-emerald-700 font-medium">Nombre actualizado correctamente</span>
+        <div className="bg-accent-subtle border border-accent/20 rounded-lg px-4 py-3 flex items-center gap-2">
+          <CheckCircleIcon className="w-4 h-4 text-accent-on-surface shrink-0" />
+          <span className="text-sm text-accent-on-surface font-medium">Nombre actualizado correctamente</span>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Mi cuenta</h2>
+      <Card>
+        <CardHeader><CardTitle>Mi cuenta</CardTitle></CardHeader>
         <form action={handleSubmit}>
           <div className="flex flex-col gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1.5">Nombre</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">Nombre</label>
               <input
                 name="firstName"
                 type="text"
                 defaultValue={firstName ?? ''}
                 placeholder="Tu nombre"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-[#10B981]"
+                className={inputClasses}
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1.5">
-                Email <span className="text-gray-400 font-normal">(solo lectura)</span>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                Email <span className="text-subtle-foreground font-normal">(solo lectura)</span>
               </label>
               <input
                 type="email"
                 defaultValue={email ?? ''}
                 readOnly
                 tabIndex={-1}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                className="w-full bg-card-hover border border-border rounded-lg px-3 py-2 text-sm text-subtle-foreground cursor-not-allowed"
               />
             </div>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="mt-5 w-full bg-[#10B981] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#059669] transition-colors disabled:opacity-60"
-          >
+          <Button type="submit" disabled={saving} className="mt-5 w-full">
             {saving ? 'Guardando...' : 'Guardar cambios'}
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl border border-red-100 p-6">
-        <h2 className="text-sm font-semibold text-red-600 mb-4">Zona de peligro</h2>
+      <div className="bg-card border border-danger/20 rounded-xl p-6">
+        <h2 className="text-sm font-semibold text-danger mb-4">Zona de peligro</h2>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium text-gray-900">Cerrar sesión</div>
-            <div className="text-xs text-gray-400 mt-0.5">Salir de tu cuenta en este dispositivo</div>
+            <div className="text-sm font-medium text-foreground">Cerrar sesión</div>
+            <div className="text-xs text-subtle-foreground mt-0.5">Salir de tu cuenta en este dispositivo</div>
           </div>
           <SignOutButton>
-            <button className="px-4 py-2 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors border border-red-200">
-              Cerrar sesión
-            </button>
+            <Button variant="danger" size="sm">Cerrar sesión</Button>
           </SignOutButton>
         </div>
       </div>

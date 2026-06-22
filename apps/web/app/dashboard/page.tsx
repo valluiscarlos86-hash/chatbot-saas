@@ -2,6 +2,14 @@ import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import {
+  EnvelopeIcon,
+  ChatBubbleLeftRightIcon,
+  DocumentTextIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/24/outline'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface RecentConversation {
   id: string
@@ -33,9 +41,9 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  bot_active: 'bg-[#10B981]',
-  human_takeover: 'bg-amber-400',
-  closed: 'bg-gray-300',
+  bot_active: 'bg-accent-on-surface',
+  human_takeover: 'bg-warning',
+  closed: 'bg-subtle-foreground',
 }
 
 export default async function DashboardPage() {
@@ -113,79 +121,129 @@ export default async function DashboardPage() {
     }
   }
 
+  const metrics = [
+    {
+      label: 'Mensajes este mes',
+      value: messagesThisMonth,
+      hint: `límite: ${messageLimit} mensajes`,
+      icon: EnvelopeIcon,
+    },
+    {
+      label: 'Conversaciones activas',
+      value: activeConversations,
+      hint: 'bot respondiendo',
+      icon: ChatBubbleLeftRightIcon,
+    },
+    {
+      label: 'Documentos',
+      value: readyDocuments,
+      hint: 'en knowledge base',
+      icon: DocumentTextIcon,
+    },
+  ]
+
   return (
     <div className="flex flex-col h-full">
 
       {/* HEADER */}
-      <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">Inicio</span>
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
+        <span className="text-sm font-medium text-foreground">Inicio</span>
         {trialDaysLeft !== null && (
-          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
+          <Badge variant="warning" size="md">
             {trialDaysLeft === 0 ? 'Trial vencido' : `${trialDaysLeft} día${trialDaysLeft !== 1 ? 's' : ''} de prueba`}
-          </span>
+          </Badge>
         )}
       </div>
 
       {/* CONTENIDO */}
-      <div className="flex-1 p-6 bg-gray-50 flex flex-col gap-6 overflow-auto">
+      <div className="flex-1 p-8 bg-background flex flex-col gap-10 overflow-auto">
 
         {/* Bienvenida */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Buen día{firstName ? <>, <span className="text-[#10B981]">{firstName}</span></> : null}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Aquí está el resumen de tu cuenta</p>
+        <div
+          className="relative overflow-hidden rounded-2xl bg-card border border-border px-8 py-10 sm:px-10 sm:py-12"
+          style={{ animation: 'fade-in-up 420ms cubic-bezier(0.23,1,0.32,1) both' }}
+        >
+          <div
+            className="absolute -top-28 -right-20 w-80 h-80 rounded-full bg-accent/10 blur-3xl pointer-events-none"
+            aria-hidden="true"
+          />
+          <div
+            className="absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-accent/6 blur-3xl pointer-events-none"
+            aria-hidden="true"
+          />
+          <div className="relative">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+              Buen día{firstName ? <>, <span className="text-accent-on-surface">{firstName}</span></> : null}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-3">Aquí está el resumen de tu cuenta</p>
+          </div>
         </div>
 
         {/* Métricas */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
-              <span className="text-emerald-600 text-sm">✉</span>
-            </div>
-            <div className="text-xs text-gray-500 mb-1">Mensajes este mes</div>
-            <div className="text-2xl font-bold text-gray-900">{messagesThisMonth}</div>
-            <div className="text-xs text-gray-400 mt-1">límite: {messageLimit} mensajes</div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
-              <span className="text-blue-600 text-sm">💬</span>
-            </div>
-            <div className="text-xs text-gray-500 mb-1">Conversaciones activas</div>
-            <div className="text-2xl font-bold text-gray-900">{activeConversations}</div>
-            <div className="text-xs text-gray-400 mt-1">bot respondiendo</div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
-              <span className="text-purple-600 text-sm">📄</span>
-            </div>
-            <div className="text-xs text-gray-500 mb-1">Documentos</div>
-            <div className="text-2xl font-bold text-gray-900">{readyDocuments}</div>
-            <div className="text-xs text-gray-400 mt-1">en knowledge base</div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {metrics.map((metric, i) => {
+            const Icon = metric.icon
+            return (
+              <div
+                key={metric.label}
+                className="group relative overflow-hidden bg-card border border-border rounded-2xl p-6 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-accent/30"
+                style={{
+                  animation: `fade-in-up 420ms cubic-bezier(0.23,1,0.32,1) ${60 + i * 60}ms both`,
+                }}
+              >
+                <Icon
+                  className="absolute -right-3 -bottom-3 w-24 h-24 text-muted-foreground/7 transition-colors duration-200 group-hover:text-accent/12"
+                  aria-hidden="true"
+                />
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                  style={{ boxShadow: `0 16px 32px -16px var(--accent-shadow)` }}
+                  aria-hidden="true"
+                />
+                <div className="relative">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                    {metric.label}
+                  </div>
+                  <div className="text-4xl font-bold text-foreground tabular-nums">{metric.value}</div>
+                  <div className="text-xs text-subtle-foreground mt-2">{metric.hint}</div>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         {/* Conversaciones recientes */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-gray-900">Conversaciones recientes</span>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-semibold text-foreground">Conversaciones recientes</span>
             <Link
               href="/dashboard/conversations"
-              className="text-sm text-[#10B981] hover:underline"
+              className="text-sm text-accent-on-surface hover:underline inline-flex items-center gap-1 group"
             >
               Ver todas
+              <ArrowRightIcon className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
             </Link>
           </div>
 
           {recentConversations.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-8 flex flex-col items-center justify-center gap-2">
-              <span className="text-2xl">💬</span>
-              <p className="text-sm text-gray-500 font-medium">Todavía no hay conversaciones</p>
-              <p className="text-xs text-gray-400">Conectá WhatsApp para empezar a recibir mensajes</p>
+            <div className="bg-card border border-border rounded-2xl">
+              <EmptyState
+                icon={ChatBubbleLeftRightIcon}
+                title="Todavía no hay conversaciones"
+                description="Conectá WhatsApp para empezar a recibir mensajes de tus clientes."
+                action={
+                  <Link
+                    href="/dashboard/integrations"
+                    className="text-sm font-medium text-accent-foreground bg-accent hover:bg-accent-hover transition-colors px-4 py-2 rounded-lg active:scale-[0.97] inline-block"
+                  >
+                    Conectar WhatsApp
+                  </Link>
+                }
+              />
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {recentConversations.map(conv => {
+              {recentConversations.map((conv, i) => {
                 const initials = getInitials(conv.customer_name, conv.customer_phone)
                 const displayName = conv.customer_name || conv.customer_phone
                 const preview = conv.last_message
@@ -196,18 +254,21 @@ export default async function DashboardPage() {
                   <Link
                     key={conv.id}
                     href="/dashboard/conversations"
-                    className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3 hover:border-[#10B981] transition-colors"
+                    className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-[0_12px_24px_-12px_var(--accent-shadow)]"
+                    style={{
+                      animation: `fade-in-up 360ms cubic-bezier(0.23,1,0.32,1) ${i * 40}ms both`,
+                    }}
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#10B981] flex items-center justify-center text-xs font-semibold text-white min-w-9">
+                    <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground min-w-9">
                       {initials}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{displayName}</div>
-                      <div className="text-xs text-gray-500 truncate">{preview}</div>
+                      <div className="text-sm font-medium text-foreground truncate">{displayName}</div>
+                      <div className="text-xs text-muted-foreground truncate">{preview}</div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="text-xs text-gray-400">{formatRelativeTime(conv.updated_at)}</span>
-                      <div className={`w-2 h-2 rounded-full ${STATUS_DOT[conv.status] ?? 'bg-gray-300'}`} />
+                      <span className="text-xs text-subtle-foreground">{formatRelativeTime(conv.updated_at)}</span>
+                      <div className={`w-2 h-2 rounded-full ${STATUS_DOT[conv.status] ?? 'bg-subtle-foreground'}`} />
                     </div>
                   </Link>
                 )

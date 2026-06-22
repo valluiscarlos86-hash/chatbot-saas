@@ -1,6 +1,10 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { DocumentArrowUpIcon, ArrowPathIcon, DocumentTextIcon, InboxIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface Document {
   id: string
@@ -105,31 +109,24 @@ export default function DocumentsPage() {
 
   function StatusBadge({ status }: { status: Document['status'] }) {
     const map = {
-      pending: { label: 'Pendiente', color: 'bg-gray-100 text-gray-600' },
-      processing: { label: 'Procesando...', color: 'bg-amber-50 text-amber-600' },
-      ready: { label: 'Listo', color: 'bg-emerald-50 text-emerald-600' },
-      error: { label: 'Error', color: 'bg-red-50 text-red-600' },
+      pending: { label: 'Pendiente', variant: 'neutral' as const },
+      processing: { label: 'Procesando...', variant: 'warning' as const },
+      ready: { label: 'Listo', variant: 'success' as const },
+      error: { label: 'Error', variant: 'danger' as const },
     }
-    const { label, color } = map[status] ?? map.pending
-    return (
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
-        {status === 'processing' && (
-          <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1 animate-pulse" />
-        )}
-        {label}
-      </span>
-    )
+    const { label, variant } = map[status] ?? map.pending
+    return <Badge variant={variant} pulse={status === 'processing'}>{label}</Badge>
   }
 
   return (
     <div className="flex flex-col h-full">
       {/* HEADER */}
-      <div className="bg-white border-b border-gray-100 px-6 py-3">
-        <span className="text-sm font-medium text-gray-700">Documentos</span>
+      <div className="bg-card border-b border-border px-6 py-3">
+        <span className="text-sm font-medium text-foreground">Documentos</span>
       </div>
 
       {/* CONTENIDO */}
-      <div className="flex-1 p-6 bg-gray-50 overflow-auto">
+      <div className="flex-1 p-6 bg-background overflow-auto">
         <div className="max-w-2xl mx-auto flex flex-col gap-6">
 
           {/* Upload zone */}
@@ -143,10 +140,10 @@ export default function DocumentsPage() {
               if (file) handleUpload(file)
             }}
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className={`bg-white rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
+            className={`bg-card rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors duration-200 ${
               dragOver
-                ? 'border-[#10B981] bg-emerald-50'
-                : 'border-gray-200 hover:border-[#10B981]'
+                ? 'border-accent bg-accent-subtle'
+                : 'border-border hover:border-accent/50'
             } ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             <input
@@ -160,29 +157,36 @@ export default function DocumentsPage() {
                 e.target.value = ''
               }}
             />
-            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-2xl">
-              {uploading ? '⏳' : '📄'}
+            <div className="w-12 h-12 rounded-full bg-accent-subtle flex items-center justify-center">
+              {uploading ? (
+                <ArrowPathIcon className="w-6 h-6 text-accent-on-surface animate-spin" />
+              ) : (
+                <DocumentArrowUpIcon className="w-6 h-6 text-accent-on-surface" />
+              )}
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-foreground">
                 {uploading ? 'Subiendo y procesando...' : 'Arrastrá o hacé click para subir'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">PDF o TXT — máximo 10MB</p>
+              <p className="text-xs text-subtle-foreground mt-1">PDF o TXT — máximo 10MB</p>
             </div>
             {!uploading && (
-              <button className="mt-2 px-4 py-2 bg-[#10B981] text-white text-xs font-medium rounded-lg hover:bg-[#059669] transition-colors">
+              <button
+                type="button"
+                className="mt-2 px-4 py-2 bg-accent text-accent-foreground text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors duration-200 active:scale-[0.97]"
+              >
                 Elegir archivo
               </button>
             )}
           </div>
 
           {/* Lista de documentos */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <Card>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">
+              <h2 className="text-sm font-semibold text-foreground">
                 Documentos subidos
                 {documents.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-gray-400">
+                  <span className="ml-2 text-xs font-normal text-subtle-foreground">
                     ({documents.length})
                   </span>
                 )}
@@ -191,34 +195,32 @@ export default function DocumentsPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <span className="text-sm text-gray-400">Cargando...</span>
+                <span className="text-sm text-subtle-foreground">Cargando...</span>
               </div>
             ) : documents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-2">
-                <span className="text-2xl">📭</span>
-                <p className="text-sm text-gray-400">Todavía no subiste ningún documento</p>
-                <p className="text-xs text-gray-300">
-                  Subí un PDF o TXT con el catálogo, precios o FAQ de tu negocio
-                </p>
-              </div>
+              <EmptyState
+                icon={InboxIcon}
+                title="Todavía no subiste ningún documento"
+                description="Subí un PDF o TXT con el catálogo, precios o FAQ de tu negocio"
+              />
             ) : (
               <div className="flex flex-col gap-3">
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-accent/30 transition-colors duration-200"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center text-lg shrink-0">
-                      {doc.file_type === 'application/pdf' ? '📕' : '📄'}
+                    <div className="w-9 h-9 rounded-lg bg-card-hover flex items-center justify-center shrink-0">
+                      <DocumentTextIcon className="w-4.5 h-4.5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400">{formatSize(doc.file_size)}</span>
+                        <span className="text-xs text-subtle-foreground">{formatSize(doc.file_size)}</span>
                         {doc.status === 'ready' && doc.chunk_count > 0 && (
                           <>
-                            <span className="text-gray-200">·</span>
-                            <span className="text-xs text-gray-400">{doc.chunk_count} chunks</span>
+                            <span className="text-border">·</span>
+                            <span className="text-xs text-subtle-foreground">{doc.chunk_count} chunks</span>
                           </>
                         )}
                       </div>
@@ -226,16 +228,16 @@ export default function DocumentsPage() {
                     <StatusBadge status={doc.status} />
                     <button
                       onClick={() => handleDelete(doc.id, doc.name)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-subtle-foreground hover:text-danger hover:bg-danger-subtle transition-colors duration-200 active:scale-[0.97] shrink-0"
                       title="Eliminar documento"
                     >
-                      ✕
+                      <XMarkIcon className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
         </div>
       </div>

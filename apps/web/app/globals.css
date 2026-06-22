@@ -1,12 +1,97 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --card-hover: #f4f4f5;
+  --border: #e5e7eb;
+  --foreground: #111827;
+  --muted-foreground: #6b7280;
+  --subtle-foreground: #9ca3af;
+
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-foreground: #ffffff;
+  --accent-on-surface: #10b981;
+  --accent-subtle: #ecfdf5;
+
+  --warning: #d97706;
+  --warning-subtle: #fffbeb;
+  --danger: #dc2626;
+  --danger-subtle: #fef2f2;
+
+  --sidebar: #111827;
+  --sidebar-hover: #1f2937;
+
+  --accent-shadow: rgba(16, 185, 129, 0.16);
+}
+
+.dark {
+  --bg: #0b0e11;
+  --card: #151921;
+  --card-hover: #1c212b;
+  --border: #242b36;
+  --foreground: #f3f4f6;
+  --muted-foreground: #9ca3af;
+  --subtle-foreground: #6b7280;
+
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --accent-foreground: #ffffff;
+  --accent-on-surface: #34d399;
+  --accent-subtle: rgba(16, 185, 129, 0.14);
+
+  --warning: #fbbf24;
+  --warning-subtle: rgba(217, 119, 6, 0.14);
+  --danger: #f87171;
+  --danger-subtle: rgba(220, 38, 38, 0.14);
+
+  --sidebar: #0b0e11;
+  --sidebar-hover: #161b22;
+
+  --accent-shadow: rgba(52, 211, 153, 0.18);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-on-surface: var(--accent-on-surface);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
 }
 
 body {
-  background: var(--background);
+  background: var(--bg);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
