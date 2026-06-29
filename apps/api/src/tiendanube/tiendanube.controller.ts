@@ -43,6 +43,15 @@ export class TiendanubeController {
     }
   }
 
+  @Post('disconnect')
+  async disconnect(@Headers('x-org-id') orgId: string) {
+    if (!orgId) {
+      throw new BadRequestException('orgId requerido');
+    }
+    await this.tiendanubeService.disconnect(orgId);
+    return { success: true };
+  }
+
   @Get('status')
   async status(@Headers('x-org-id') orgId: string) {
     if (!orgId) {

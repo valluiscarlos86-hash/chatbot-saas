@@ -5,6 +5,7 @@ import {
   PhoneIcon,
   GlobeAltIcon,
   InformationCircleIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -34,17 +35,11 @@ function buildWidgetSnippet(phoneNumber: string, message: string): string {
 }
 
 export default function IntegrationsPage() {
-  const [tiendanubeParam, setTiendanubeParam] = useState<string | null>(null)
-
   const [account, setAccount] = useState<WhatsappAccount | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const [tiendanubeConnected, setTiendanubeConnected] = useState(false)
-  const [tiendanubeLoading, setTiendanubeLoading] = useState(true)
-  const [tiendanubeConnecting, setTiendanubeConnecting] = useState(false)
 
   const [phoneNumber, setPhoneNumber] = useState('')
   const [phoneNumberId, setPhoneNumberId] = useState('')
@@ -72,35 +67,6 @@ export default function IntegrationsPage() {
       })
       .catch(() => setLoading(false))
   }, [])
-
-  useEffect(() => {
-    setTiendanubeParam(new URLSearchParams(window.location.search).get('tiendanube'))
-  }, [])
-
-  useEffect(() => {
-    fetch('/api/tiendanube/status')
-      .then(res => res.json())
-      .then(data => {
-        setTiendanubeConnected(!!data.connected)
-        setTiendanubeLoading(false)
-      })
-      .catch(() => setTiendanubeLoading(false))
-  }, [])
-
-  async function handleConnectTiendanube() {
-    setTiendanubeConnecting(true)
-    try {
-      const res = await fetch('/api/tiendanube/connect')
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setTiendanubeConnecting(false)
-      }
-    } catch {
-      setTiendanubeConnecting(false)
-    }
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -164,58 +130,10 @@ export default function IntegrationsPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-card border-b border-border px-6 py-3">
-        <span className="text-sm font-medium text-foreground">Integraciones</span>
+        <span className="text-sm font-medium text-foreground">Canales</span>
       </div>
       <div className="flex-1 p-6 bg-background overflow-auto">
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
-          {tiendanubeParam === 'success' && (
-            <div className="bg-accent-subtle border border-accent/20 rounded-lg px-4 py-3">
-              <p className="text-sm text-accent-on-surface font-medium">Tiendanube conectado correctamente</p>
-            </div>
-          )}
-          {tiendanubeParam === 'error' && (
-            <div className="bg-danger-subtle border border-danger/20 rounded-lg px-4 py-3">
-              <p className="text-sm text-danger font-medium">No se pudo conectar Tiendanube. Probá de nuevo.</p>
-            </div>
-          )}
-
-          {/* Tiendanube */}
-          <Card padding="md">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-bold"
-                style={{ backgroundColor: '#F06000' }}
-              >
-                TN
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-foreground">Tiendanube</div>
-                <div className="text-xs text-subtle-foreground mt-0.5">
-                  Conectá tu tienda para que el bot responda preguntas de stock, productos y precios en tiempo real.
-                </div>
-              </div>
-              {!tiendanubeLoading && (
-                <Badge variant={tiendanubeConnected ? 'success' : 'neutral'} size="md">
-                  {tiendanubeConnected ? 'Conectado' : 'No conectado'}
-                </Badge>
-              )}
-            </div>
-
-            <div className="pt-4 mt-4 border-t border-border">
-              {tiendanubeLoading ? (
-                <div className="h-9 w-40 bg-card-hover rounded-lg animate-pulse" />
-              ) : tiendanubeConnected ? (
-                <Button size="sm" disabled className="opacity-50 cursor-not-allowed">
-                  Desconectar
-                </Button>
-              ) : (
-                <Button size="sm" onClick={handleConnectTiendanube} disabled={tiendanubeConnecting}>
-                  {tiendanubeConnecting ? 'Conectando...' : 'Conectar Tiendanube'}
-                </Button>
-              )}
-            </div>
-          </Card>
 
           {/* WhatsApp */}
           <Card padding="md">
@@ -375,6 +293,28 @@ export default function IntegrationsPage() {
                 )}
               </div>
             )}
+          </Card>
+
+          {/* Instagram - próximamente */}
+          <Card padding="md">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-card-hover flex items-center justify-center shrink-0">
+                <CameraIcon className="w-6 h-6 text-subtle-foreground" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-foreground">Instagram</div>
+                <div className="text-xs text-subtle-foreground mt-0.5">
+                  Conectá tu cuenta de Instagram para responder mensajes y comentarios desde el bot.
+                </div>
+              </div>
+              <Badge variant="neutral" size="md">Próximamente</Badge>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-border">
+              <Button size="sm" disabled className="opacity-50 cursor-not-allowed">
+                Próximamente
+              </Button>
+            </div>
           </Card>
 
         </div>

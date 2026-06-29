@@ -19,7 +19,7 @@ export async function GET() {
   if (!orgId) return NextResponse.json([])
 
   const result = await db.execute(sql`
-    SELECT id, name, file_type, file_size, status, chunk_count, created_at
+    SELECT id, name, file_type, file_size, status, chunk_count, source_type, source_url, created_at
     FROM knowledge_documents
     WHERE org_id = ${orgId as string}
     ORDER BY created_at DESC

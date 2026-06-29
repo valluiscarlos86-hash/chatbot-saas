@@ -9,6 +9,7 @@ import { DocumentsModule } from './documents.module'
 import { AiModule } from './ai.module'
 import { ConversationsModule } from './conversations/conversations.module'
 import { WhatsappAccountsModule } from './whatsapp-accounts/whatsapp-accounts.module'
+import { TiendanubeModule } from './tiendanube/tiendanube.module'
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WhatsappAccountsModule } from './whatsapp-accounts/whatsapp-accounts.mo
     AiModule,
     ConversationsModule,
     WhatsappAccountsModule,
+    TiendanubeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

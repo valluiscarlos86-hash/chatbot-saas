@@ -17,12 +17,12 @@ export async function GET(req: NextRequest) {
   const { userId } = await auth()
 
   if (!code || !userId) {
-    return NextResponse.redirect(`${origin}/dashboard/integrations?tiendanube=error`)
+    return NextResponse.redirect(`${origin}/dashboard/documents?tiendanube=error`)
   }
 
   const orgId = await getOrgId(userId)
   if (!orgId) {
-    return NextResponse.redirect(`${origin}/dashboard/integrations?tiendanube=error`)
+    return NextResponse.redirect(`${origin}/dashboard/documents?tiendanube=error`)
   }
 
   try {
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
     const data = await res.json()
 
     if (data.success) {
-      return NextResponse.redirect(`${origin}/dashboard/integrations?tiendanube=success`)
+      return NextResponse.redirect(`${origin}/dashboard/documents?tiendanube=success`)
     }
-    return NextResponse.redirect(`${origin}/dashboard/integrations?tiendanube=error`)
+    return NextResponse.redirect(`${origin}/dashboard/documents?tiendanube=error`)
   } catch {
-    return NextResponse.redirect(`${origin}/dashboard/integrations?tiendanube=error`)
+    return NextResponse.redirect(`${origin}/dashboard/documents?tiendanube=error`)
   }
 }

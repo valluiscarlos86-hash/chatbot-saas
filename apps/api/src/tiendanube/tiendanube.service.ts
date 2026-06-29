@@ -290,6 +290,15 @@ export class TiendanubeService {
     return combined;
   }
 
+  // Borra el vínculo de la org con Tiendanube (no revoca el token del lado
+  // de Tiendanube) y limpia ambos caches en memoria para que el efecto sea
+  // inmediato, sin esperar a que expire el TTL de 60s.
+  async disconnect(orgId: string): Promise<void> {
+    await this.db.execute(sql`DELETE FROM tiendanube_accounts WHERE org_id = ${orgId}`);
+    this.connectedCache.delete(orgId);
+    this.simplifiedCache.delete(orgId);
+  }
+
   async getProductById(orgId: string, productId: string): Promise<SimplifiedProduct | null> {
     const account = await this.getAccount(orgId);
     if (!account) {

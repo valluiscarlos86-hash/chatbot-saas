@@ -40,13 +40,19 @@ export class AiController {
       officeHours: config?.office_hours || undefined,
     };
 
-    const response = await this.aiService.generateResponse(
-      message,
-      chatbotConfig,
-      [],
-      orgId,
-    );
+    const [response, relevantChunks] = await Promise.all([
+      this.aiService.generateResponse(message, chatbotConfig, [], orgId),
+      this.aiService.searchRelevantChunksWithSources(message, orgId),
+    ]);
 
-    return { response };
+    const sources = relevantChunks.map((chunk) => ({
+      documentName: chunk.documentName,
+      sourceType: chunk.sourceType,
+      sourceUrl: chunk.sourceUrl,
+      chunkText: chunk.chunkText,
+      similarity: chunk.similarity,
+    }));
+
+    return { response, sources };
   }
 }
