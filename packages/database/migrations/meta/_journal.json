@@ -36,6 +36,20 @@
       "when": 1781828680110,
       "tag": "0004_marvelous_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782338748869,
+      "tag": "0005_bitter_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782663637827,
+      "tag": "0006_odd_lizard",
+      "breakpoints": true
     }
   ]
 }

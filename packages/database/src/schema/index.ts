@@ -4,6 +4,7 @@ export const planEnum = pgEnum('plan', ['free', 'basic', 'pro', 'enterprise'])
 export const convStatusEnum = pgEnum('conversation_status', ['bot_active', 'human_takeover', 'closed'])
 export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant', 'system'])
 export const docStatusEnum = pgEnum('document_status', ['pending', 'processing', 'ready', 'error'])
+export const docSourceEnum = pgEnum('document_source', ['file', 'url'])
 
 export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -69,6 +70,8 @@ export const knowledgeDocuments = pgTable('knowledge_documents', {
   status: docStatusEnum('status').default('pending').notNull(),
   chunkCount: integer('chunk_count').default(0),
   errorMessage: text('error_message'),
+  sourceType: docSourceEnum('source_type').default('file').notNull(),
+  sourceUrl: text('source_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -88,4 +91,13 @@ export const chatbotConfigs = pgTable('chatbot_configs', {
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const tiendanubeAccounts = pgTable('tiendanube_accounts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: text('org_id').notNull().unique(),
+  storeId: text('store_id').notNull(),
+  accessToken: text('access_token').notNull(),
+  storeUrl: text('store_url'),
+  connectedAt: timestamp('connected_at').defaultNow().notNull(),
 })
