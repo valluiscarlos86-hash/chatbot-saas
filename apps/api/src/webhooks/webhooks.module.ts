@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common'
 import { WebhooksController } from './webhooks.controller'
 import { WebhooksService } from './webhooks.service'
-import { AiService } from '../ai.service'
+import { AiModule } from '../ai.module'
 
 @Module({
+  imports: [AiModule],
   controllers: [WebhooksController],
-  providers: [WebhooksService, AiService],
+  providers: [WebhooksService],
 })
 export class WebhooksModule {}
