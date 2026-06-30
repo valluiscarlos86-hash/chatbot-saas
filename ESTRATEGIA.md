@@ -1,13 +1,15 @@
 # 📈 AtentIA — Estrategia, Producto y Go-to-Market
 
-> Documento estratégico vivo. Complementa al `README.md` (técnico) y al `PRODUCT.md` (especificación de producto).
+> Documento estratégico vivo. Complementa al `README.md` (técnico), `PRODUCT.md` (producto) y `ESTADO.md` (estado real del código).
 > Última actualización: Junio 2026.
 
 ---
 
 ## 1. Visión en una frase
 
-Que cualquier PyME de LatAm pueda tener su WhatsApp respondiendo solo, con la información real de su negocio, en 15 minutos — y pueda intervenir un humano cuando quiera, desde un panel propio.
+Que cualquier PyME de LatAm pueda tener su WhatsApp respondiendo solo, con la información real de su negocio — incluyendo precio y stock en vivo de su tienda online — en 15 minutos, y pueda intervenir un humano cuando quiera.
+
+> Actualización v2: la visión sumó "precio y stock en vivo". Ya no es solo un bot que lee documentos; se conecta a la tienda del comercio.
 
 ---
 
@@ -15,58 +17,55 @@ Que cualquier PyME de LatAm pueda tener su WhatsApp respondiendo solo, con la in
 
 | Competidor | Qué hacen bien | Su debilidad (nuestra oportunidad) |
 |---|---|---|
-| **Globales** (Botpress, Intercom) | Potentes, completos | Complejos de configurar o caros para una PyME |
-| **CRMs LatAm** (Callbell, Sirena) | Excelentes para gestión humana multi-agente | Su IA suele ser un añadido básico o basado en reglas |
-| **Legacy bots** (Cliengo) | Fáciles de empezar | Se sienten robóticos ("presione 1, 2") |
+| **Globales** (Botpress, Intercom) | Potentes, completos | Complejos o caros para una PyME |
+| **CRMs LatAm** (Callbell, Sirena) | Gestión humana multi-agente | Su IA suele ser básica o por reglas |
+| **Legacy bots** (Cliengo) | Fáciles de empezar | Se sienten robóticos |
 
-**El hueco que ocupa AtentIA:** IA generativa real (RAG, infiere de documentos) + bandeja multi-agente nativa + simplicidad de PyME + pricing transparente. No es "un CRM con IA pegada encima" ni "un bot de reglas": la IA es el corazón, y el humano es la red de seguridad.
+**El hueco que ocupa AtentIA:** IA generativa real (RAG) + **integración en vivo con la tienda (Tiendanube)** + bandeja multi-agente + simplicidad de PyME. La integración con e-commerce es un diferencial nuevo y concreto: para un comercio con Tiendanube, AtentIA responde mejor que cualquier bot que solo lea un PDF.
 
 ---
 
-## 3. Diferenciales (y la crítica honesta a cada uno)
+## 3. Diferenciales (y la crítica honesta)
 
-### Diferenciales propuestos
-1. **Time-to-value de 15 minutos** — sin flujos visuales complejos; la IA infiere de PDFs o texto libre.
-2. **Transición IA→humano fluida** en una bandeja multi-agente nativa en tiempo real.
-3. **Pricing predecible y transparente.**
+### Diferenciales
+1. **Time-to-value de 15 minutos** — la IA infiere de PDFs, texto o web.
+2. **Precio y stock en vivo desde Tiendanube** — diferencial nuevo, real y demostrable.
+3. **Transición IA→humano fluida** en bandeja multi-agente.
+4. **Pricing predecible** (cuando exista el billing).
 
-### El abogado del diablo (riesgos que NO hay que subestimar)
+### El abogado del diablo (riesgos que NO subestimar)
 
-- **El miedo a la alucinación es la objeción #1.** Una PyME le teme a que el bot le diga una pelotudez a un cliente real (un precio inventado, un descuento que no existe). El RAG ayuda, pero el cliente no sabe qué es RAG. Hay que *mostrarle control*, no explicarle tecnología. → Solución de producto: **modo borrador / aprobación** (ver killer features).
-
-- **El setup de WhatsApp es el verdadero cuello de botella.** La promesa de "15 minutos" es verdad *solo después* de conectar WhatsApp (Meta Business, número, verificación, tokens). Una PyME no técnica no pasa de la pantalla 2 de Meta sola. → Solución: para los primeros clientes, **onboarding de WhatsApp asistido / hecho por nosotros**; a futuro, Embedded Signup.
-
-- **La transición IA→humano NO es un diferencial percibido.** Callbell ya lo hace; el cliente asume que todos lo hacen. Es *table-stakes*, no ventaja. Hay que darlo por sentado y competir en otro lado.
+- **El miedo a la alucinación es la objeción #1.** Una PyME teme que el bot invente un precio. → La **regla de precedencia Tiendanube>RAG** que construimos ataca esto directamente para productos: el bot no inventa precios, los lee en vivo. Para el resto, sigue pendiente el **modo borrador/aprobación**.
+- **El setup de WhatsApp es el verdadero cuello de botella.** La promesa de "15 minutos" es real solo después de conectar WhatsApp (Meta, número, tokens). Una PyME no técnica no lo hace sola. → Onboarding asistido para los primeros clientes; Embedded Signup a futuro.
+- **La transición IA→humano NO es diferencial percibido.** Callbell ya lo hace. Es table-stakes.
+- **(NUEVO) El billing no existe todavía.** No se puede cobrar ni limitar uso. Es la barrera #1 para tener negocio real, no solo producto. Ver sección 9.
 
 ---
 
 ## 4. Killer features (bajo esfuerzo, alto impacto en ventas)
 
-> El criterio: no mejoran el bot, mejoran *la vida del dueño*. Esa es la diferencia entre una feature técnica y una que se vende sola.
+> El criterio: no mejoran el bot, mejoran *la vida del dueño*.
 
-### 4.1 Modo borrador / aprobación
-Los primeros días, el bot **redacta** la respuesta pero no la envía hasta que el dueño le da OK desde el celular. Ataca directo el miedo a la alucinación. Gancho de onboarding: *"los primeros 3 días el bot te pide permiso, ves que no manda ninguna macana, y recién ahí lo soltás."* Poco código (es una variante del handoff que ya existe).
+### 4.1 Modo borrador / aprobación ◻️ pendiente
+El bot redacta pero no envía hasta que el dueño da OK desde el celular. Ataca el miedo a la alucinación. Poco código (variante del handoff que ya existe).
 
-### 4.2 Reporte semanal automático por WhatsApp
-Cada semana, un mensaje al dueño: *"AtentIA respondió 143 consultas, derivó 12, las preguntas más frecuentes fueron X, Y, Z."* Bajo esfuerzo (cron + resumen con la IA que ya tenemos). Le recuerda al dueño *todas las semanas* por qué paga. Ataca el churn, el verdadero enemigo del SaaS PyME.
+### 4.2 Reporte semanal automático por WhatsApp ◻️ pendiente
+Mensaje semanal al dueño con resumen. Bajo esfuerzo (cron + IA). Ataca el churn.
 
-### 4.3 Detección de "lead caliente"
-Cuando el cliente final dice "lo quiero comprar", "cómo pago", "pasame los datos", el sistema notifica al dueño: *"🔥 Tenés un cliente listo para comprar."* Convertir consultas en plata es lo único que una PyME mide. Es la feature que hace que renueven.
+### 4.3 Detección de "lead caliente" ◻️ pendiente
+Cuando el cliente dice "lo quiero comprar", notificar al dueño. Convierte consultas en plata.
+
+> Las tres siguen pendientes. La 4.3 conecta directo con la visión de venta conversacional (Nivel siguiente).
 
 ---
 
-## 5. Pricing — Plan "Fundador" para los primeros 10 clientes
+## 5. Pricing — Plan "Fundador" para los primeros 10
 
-No arrancar con la tabla Free/Basic/Pro/Enterprise. Para los primeros 10:
+> Sigue vigente. Recordatorio: **el billing no está implementado**, así que el cobro de los primeros clientes será manual al inicio.
 
-**Plan Fundador:** precio fijo bajo y **congelado de por vida** (objetivo: equivalente a ~USD 15-20/mes en pesos — posicionable como *"menos que un cafecito por día"*), a cambio de tres cosas que valen más que la plata:
-1. Permiso para usarlos como **caso de éxito**.
-2. **Feedback semanal**.
-3. Pago de los **12 meses por adelantado** o débito automático (capital + compromiso).
+**Plan Fundador:** precio fijo bajo y congelado de por vida (~USD 15-20/mes en pesos, "menos que un cafecito por día"), a cambio de: caso de éxito, feedback semanal, y pago anticipado o débito.
 
-**La clave psicológica:** no se vende "software barato", se vende *acceso temprano con precio de fundador que va a subir cuando lancemos oficialmente*. Urgencia honesta.
-
-**Onboarding asistido:** hacer el setup de WhatsApp a mano, gratis, para esos 10. *"Yo te lo dejo andando, vos solo usalo."* El CAC en tiempo es alto, pero 10 casos de éxito con onboarding asistido valen oro y enseñan dónde automatizar.
+**Onboarding asistido:** hacer el setup de WhatsApp a mano, gratis, para esos 10.
 
 ### Tabla pública (post-fundadores)
 
@@ -77,118 +76,136 @@ No arrancar con la tabla Free/Basic/Pro/Enterprise. Para los primeros 10:
 | Pro | 5.000 | $79 USD | 5 |
 | Enterprise | Ilimitado | A convenir | Ilimitado |
 
-> Tools / integraciones externas (Nivel 3) = feature de plan alto, 5-10× el precio base.
+> Integraciones en vivo (Tiendanube y futuras) = candidatas a feature de plan alto.
 
 ---
 
-## 6. Niveles de madurez del producto (visión de expansión)
+## 6. Niveles de madurez del producto — ACTUALIZADO
+
+> ⚠️ Cambio importante respecto a la v1: ya tocamos el Nivel 3.
 
 ```
-Nivel 1 — INFORMA (actual)
-  El bot responde con RAG. No ejecuta acciones.
+Nivel 1 — INFORMA ✅ (hecho)
+  El bot responde con RAG desde documentos y webs.
   Mercado: cualquier PyME con catálogo / FAQ.
 
-Nivel 2 — AGENDA (próximo gran salto)
-  Calendario de turnos PROPIO dentro del dashboard.
-  La empresa define disponibilidad, el bot agenda directo.
-  Sin integraciones externas.
-  Mercado: peluquerías, consultorios, talleres, estudios.
+Nivel 2 — AGENDA ◻️ (NO construido — saltado por ahora)
+  Calendario de turnos propio dentro del dashboard.
+  Mercado: peluquerías, consultorios, talleres.
+  → Sigue siendo un mercado amplio y atractivo. Pendiente.
 
-Nivel 3 — INTEGRA (visión enterprise)
-  Function calling / tools + integración con sistemas externos.
-  Mercado: hospitales, concesionarias, municipios.
-  Ej. aspiracional: Municipalidad de Cosquín (turnos de carnet,
-  automatización de reclamos).
+Nivel 3 — INTEGRA ✅ (hecho parcialmente, vía Tiendanube)
+  Function calling + integración con sistema externo en vivo.
+  Construimos la primera integración: Tiendanube (precio/stock real).
+  La arquitectura de tools quedó validada y es reutilizable
+  para otras integraciones (otros e-commerce, sistemas, etc.).
 ```
 
-**Regla estratégica:** no construir Nivel 3 antes de tener Nivel 2 con clientes reales pagando. La arquitectura de tools es la misma para todos los casos — solo cambia el sistema externo conectado. Conseguir casos de éxito reales (ej. *"15 peluquerías de Córdoba usando AtentIA para turnos"*) antes de tocar puertas institucionales.
+### La decisión que tomamos (blanqueada)
+
+La regla original decía *"no construir Nivel 3 antes de tener Nivel 2 con clientes pagando"*. **No la seguimos:** construimos Nivel 3 (Tiendanube) antes que Nivel 2 (agenda) y antes de tener clientes.
+
+**¿Fue un error?** No necesariamente. Lo que ganamos:
+- Validamos que la arquitectura de function calling/tools funciona end-to-end.
+- Tenemos un diferencial concreto y demostrable para comercios con Tiendanube.
+- El "cómo se integra un sistema externo" ya está resuelto; sumar otro es cambiar el conector.
+
+**Lo que quedó pendiente como consecuencia:**
+- El Nivel 2 (agenda de turnos) — mercado amplio (peluquerías/consultorios) — sigue sin tocarse.
+- No hay clientes pagando todavía, así que el Nivel 3 aún no está validado *comercialmente* (sí técnicamente).
+
+**Recalibración estratégica:** ahora hay dos caminos de expansión válidos abiertos:
+- **(a)** Profundizar Nivel 3 → venta conversacional (cerrar la venta en WhatsApp, no solo informar precio). Aprovecha lo ya construido.
+- **(b)** Volver al Nivel 2 → agenda de turnos, para atacar el mercado de servicios (peluquerías, etc.).
+
+No hay que decidir hoy, pero sí tener la disyuntiva consciente.
 
 ---
 
 ## 7. Decisiones: tomadas vs. pendientes
 
-### ✅ Ya tomadas (no re-discutir)
-- Stack: Next.js + NestJS + PostgreSQL/pgvector + Redis
-- Multi-tenancy por `org_id` (RLS como refuerzo futuro)
-- RAG con pgvector sobre Pinecone para el MVP
+### ✅ Ya tomadas
+- Stack: Next.js + NestJS + PostgreSQL/pgvector
+- Multi-tenancy por `org_id` (RLS como refuerzo futuro — sigue pendiente)
+- RAG con pgvector sobre Pinecone (MVP)
 - Clerk para auth
 - WhatsApp Cloud API directa (sin BSP)
-- OpenAI con capa de abstracción
-- Monorepo con Turborepo
-- Resumen de conversación con IA on-demand
+- OpenAI directo (sin LangChain)
+- **(NUEVO) Tiendanube como primera integración externa**
+- **(NUEVO) Precedencia Tiendanube > RAG para precio/stock**
 
 ### ⏳ Pendientes y urgentes
-- **Modelo de onboarding de WhatsApp** (manual asistido → Embedded Signup → BSP como fallback). *La más urgente: impacta directo la promesa de valor.*
-- **Medio de pago para LatAm** (Stripe no opera local fácil — evaluar Mercado Pago / dLocal).
-- **Política de límites** cuando un tenant supera su cuota (¿corta? ¿degrada a modelo barato? ¿cobra extra?).
-- **Hosting de producción** (Railway para arrancar).
+- **Billing / medio de pago LatAm** (Mercado Pago / dLocal). *La más urgente para tener negocio.*
+- **Enforcement de límites + conteo de mensajes** (hoy el contador está muerto).
+- **Modelo de onboarding de WhatsApp** (manual → Embedded Signup → BSP).
+- **Hosting de producción** (Railway).
 
 ---
 
 ## 8. Estrategias de fricción cero
 
-- Onboarding en pasos, un solo "siguiente" por pantalla, con estado de "completá tu setup" siempre visible.
-- Importar conocimiento desde *cualquier cosa*: PDF, foto del catálogo, pegar texto, o URL de la web.
-- **Plantillas por rubro** ("soy peluquería", "soy tienda de ropa") que setean tono y reglas de escalada por defecto.
-- Modo borrador como red de seguridad para que el primer día no dé miedo.
+- Onboarding en pasos, un "siguiente" por pantalla, estado de setup visible.
+- Importar conocimiento desde cualquier cosa: PDF, texto, URL — o **conectar Tiendanube en un click** (nuevo, el de menor fricción).
+- **Plantillas por rubro** ("soy tienda de ropa", "soy peluquería").
+- Modo borrador como red de seguridad inicial.
 
 ---
 
-## 9. Mejoras arquitectónicas / de concepto pendientes
+## 9. Deuda de escalabilidad consciente — NUEVA SECCIÓN
 
-- **Guardrails visibles sobre la IA** (el modo borrador es también mejora de concepto, no solo comercial).
-- **Control de presupuesto de tokens por tenant** — antes de escalar, para que un cliente abusivo no haga volar los costos.
-- **Envío de mensajes del agente duplicado en el controller** — deuda técnica menor, anotada, no urgente (refactor a servicio compartido a futuro).
+> Antes de crecer (no antes de vender los primeros 10). Hoy la arquitectura es síncrona y sin red de contención. Aguanta el volumen de ~10 PyMEs sin problema, pero no más.
+
+Por orden de urgencia cuando haya tracción:
+
+1. **Cola de mensajes (Redis + BullMQ).** Hoy el webhook de WhatsApp procesa TODO síncrono (RAG + OpenAI + tools) en el mismo request. Con concurrencia, se cae. Es lo primero a resolver para escalar.
+2. **Enforcement de límites + conteo real.** El `monthlyMessageCount` existe pero no se incrementa; nadie frena a un cliente que se pasa de su cuota. Sin esto, el costo de OpenAI no tiene techo y los planes no significan nada.
+3. **Billing real.** Sin cobro automatizado no hay SaaS sostenible.
+4. **RLS o guard centralizado de `org_id`.** El aislamiento entre clientes es por convención (cada query filtra a mano). Un olvido = fuga de datos entre tenants.
+5. **Deploy a producción** (Railway + Vercel + CI/CD).
+
+> Detalle técnico completo en `ESTADO.md`, secciones 4 y 7.
 
 ---
 
 ## 10. Lo que falta debatir (preguntas estratégicas abiertas)
 
-1. **Responsabilidad legal de lo que dice el bot.** Si el bot promete mal un precio y el cliente reclama, ¿de quién es la culpa? → Términos de servicio que dejen claro que la PyME es responsable del contenido/conocimiento que carga; AtentIA es la herramienta.
-
-2. **Datos de los clientes finales.** Se guardan conversaciones de personas que aceptaron los términos de la PyME, no los nuestros. En Argentina aplica la Ley 25.326 de protección de datos. → Definir postura de retención, borrado y privacidad *desde ahora*.
-
-3. **El moat a 12 meses.** Hoy cualquiera con el mismo stack puede construir algo parecido. ¿Qué nos hace defendibles? Hipótesis posibles: (a) los datos — mientras más conversaciones de un rubro procesamos, mejores se vuelven los resúmenes y clasificaciones para *ese* rubro; (b) integración profunda con un vertical — ser *el* sistema de turnos de las peluquerías de Córdoba; (c) marca y casos de éxito locales. No hay que resolverlo hoy, pero sí tener una hipótesis y construir hacia ella.
+1. **Responsabilidad legal de lo que dice el bot.** Si promete mal un precio, ¿de quién es la culpa? La precedencia Tiendanube>RAG reduce el riesgo en productos, pero no lo elimina. → Términos de servicio claros: la PyME es responsable del contenido.
+2. **Datos de los clientes finales.** Ley 25.326 (Argentina). Definir retención, borrado, privacidad. Más urgente ahora que guardamos también `tiendanube_accounts` con tokens.
+3. **El moat a 12 meses.** Hipótesis: (a) datos por rubro, (b) integración profunda con un vertical, (c) marca y casos locales. La integración Tiendanube empuja hacia (b): ser *el* bot de los comercios Tiendanube de la región.
 
 ---
 
 ## 11. Próximo foco recomendado
 
 ```
-1. Integraciones WhatsApp (el cuello de botella identificado)
-2. Deploy a producción (Vercel + Railway)
-3. Conseguir los primeros 10 con el Plan Fundador
-4. Sesión de diseño dedicada (landing + rediseño del dashboard)
+1. Deploy a producción (Vercel + Railway) — sin esto no hay clientes reales
+2. Conseguir los primeros 10 con el Plan Fundador (cobro manual al inicio)
+3. Decidir el camino de expansión: venta conversacional (Nivel 3+) vs agenda (Nivel 2)
+4. Billing + enforcement de límites (antes de que el volumen lo exija)
+5. Sesión de diseño dedicada (landing + Analítica funcional)
 ```
 
 > La estrategia es combustible. El producto en la calle es lo que la valida.
 
 ---
 
-## 12. Landing page — estructura para conversión (pre-login)
+## 12. Landing page — estructura para conversión
 
-> Merece su propia sesión de diseño dedicada. Esto es el esqueleto.
+> Merece su propia sesión de diseño. Esqueleto:
 
-1. **Hero** — una sola promesa de resultado (no "chatbot con IA" sino *"Tu WhatsApp respondiendo solo, con la info de tu negocio, en 15 minutos"*). CTA único + loop de video/gif del panel real (bot respondiendo + handoff).
-2. **El problema** — hablarle al dolor: mensajes sin responder de noche, perder ventas por demora, contestar lo mismo 50 veces.
-3. **Cómo funciona** — 3 pasos visuales (conectá WhatsApp → subí tu info → activá).
-4. **Integraciones** — WhatsApp prominente + widget web.
-5. **Diferenciales** — modo borrador y detección de leads calientes.
-6. **Planes** — con el Fundador destacado y urgencia honesta.
-7. **FAQ** — atacar objeciones reales (¿y si se equivoca? ¿necesito saber programar? ¿puedo intervenir yo?).
-8. **Testimonios** — cuando estén los 10; antes, "están construyendo con nosotros".
-9. **CTA final** — fuerte, al login.
+1. **Hero** — una promesa de resultado: *"Tu WhatsApp respondiendo solo, con la info y el stock real de tu negocio, en 15 minutos."* CTA único + video del panel real.
+2. **El problema** — mensajes sin responder, perder ventas por demora, contestar lo mismo 50 veces.
+3. **Cómo funciona** — 3 pasos (conectá WhatsApp → cargá tu info o conectá Tiendanube → activá).
+4. **Integraciones** — WhatsApp + **Tiendanube** (nuevo, destacado) + widget web.
+5. **Diferenciales** — stock en vivo, modo borrador, detección de leads.
+6. **Planes** — Fundador destacado, urgencia honesta.
+7. **FAQ** — objeciones reales (¿y si se equivoca? ¿necesito programar? ¿puedo intervenir?).
+8. **Testimonios** — cuando estén los 10.
+9. **CTA final** — al login.
 
 ### Nivel de diseño a emular
-Referencias: Emil Kowalski, Impeccable Style, Tasteskill.dev. Lo que tienen en común NO es "animaciones", es **restraint y precisión**:
-- Una sola familia tipográfica con jerarquía clara.
-- Muchísimo espacio en blanco.
-- Paleta reducida (verde AtentIA + neutros, nada más).
-- Micro-interacciones que *significan algo*: hover con transición de ~150ms, gif del producto que carga suave, números que cuentan hacia arriba al entrar en viewport.
-- Transiciones `ease-out`, sombras sutiles y planas, fade discreto por sección al scrollear.
-- **Sin** carruseles, degradés ruidosos, ni elementos flotando.
-- La sofisticación es lo que sacás, no lo que agregás. Ante la duda entre agregar un efecto o no: no lo agregues.
+Referencias: Emil Kowalski, Impeccable Style, Tasteskill.dev. Lo común NO es "animaciones", es **restraint y precisión**: una familia tipográfica, mucho espacio en blanco, paleta reducida (verde AtentIA + neutros), micro-interacciones con sentido (~150ms), transiciones `ease-out`, sin carruseles ni degradés ruidosos. La sofisticación es lo que sacás, no lo que agregás.
 
 ---
 
-*Documento estratégico vivo — se actualiza con cada decisión de negocio.*
+*Documento estratégico vivo. Para el estado real del código, ver [`ESTADO.md`](./ESTADO.md). Última actualización: Junio 2026.*
