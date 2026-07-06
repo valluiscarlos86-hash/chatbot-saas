@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { NextResponse, NextRequest } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3001'
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -19,7 +21,7 @@ export async function PATCH(
   const { id } = await params
   const body = await req.json()
 
-  const res = await fetch(`http://localhost:3001/conversations/${id}/status`, {
+  const res = await fetch(`${BACKEND_URL}/conversations/${id}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...body, orgId }),

@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { NextResponse, NextRequest } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3001'
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
   backendForm.append('file', file)
   backendForm.append('orgId', orgId as string)
 
-  const res = await fetch('http://localhost:3001/documents/upload', {
+  const res = await fetch(`${BACKEND_URL}/documents/upload`, {
     method: 'POST',
     body: backendForm,
   })

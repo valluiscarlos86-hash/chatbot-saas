@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { NextResponse, NextRequest } from 'next/server'
 
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3001'
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +19,7 @@ export async function GET(
   if (!orgId) return NextResponse.json([])
 
   const { id } = await params
-  const res = await fetch(`http://localhost:3001/conversations/${id}/messages?orgId=${orgId}`)
+  const res = await fetch(`${BACKEND_URL}/conversations/${id}/messages?orgId=${orgId}`)
   const data = await res.json()
   return NextResponse.json(data)
 }
