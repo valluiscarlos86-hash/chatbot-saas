@@ -5,6 +5,16 @@ import { sql } from 'drizzle-orm'
 import axios from 'axios'
 import { AiService } from '../ai.service'
 
+// Texto legible de cada motivo, para la nota que lee el agente humano.
+const MOTIVOS_DERIVACION: Record<string, string> = {
+  pedido_explicito: 'el cliente pidió hablar con una persona',
+  sin_informacion: 'el asistente no tenía información para responder',
+  excepcion_a_politica: 'la consulta requiere una excepción a las políticas del negocio',
+  reclamo: 'el cliente expresó un reclamo',
+  error_tecnico: 'falló la generación automática de respuestas',
+  otro: 'otro motivo',
+}
+
 @Injectable()
 export class WebhooksService {
   constructor(
@@ -175,16 +185,23 @@ export class WebhooksService {
 
     // 6 — Llamar a OpenAI con RAG
     let aiResponse: string
+    let handoff: { motivo: string; resumen: string } | null = null
     try {
-      aiResponse = await this.aiService.generateResponse(
+      const reply = await this.aiService.generateResponse(
         text,
         chatbotConfig,
         conversationHistory,
         orgId,
       )
+      aiResponse = reply.response
+      handoff = reply.handoff
     } catch (error) {
       console.error('Error al llamar a OpenAI:', error)
       aiResponse = 'Lo siento, estoy teniendo dificultades técnicas. Un agente te contactará pronto.'
+      handoff = {
+        motivo: 'error_tecnico',
+        resumen: 'La generación automática de respuestas falló. La conversación se deriva para que una persona la atienda.',
+      }
     }
 
     // 7 — Guardar mensaje entrante (user)
@@ -199,6 +216,27 @@ export class WebhooksService {
       INSERT INTO messages (conversation_id, org_id, role, content)
       VALUES (${conversationId}, ${orgId}, 'assistant', ${aiResponse})
     `)
+
+    // 9 — Derivación a una persona, si el asistente la pidió.
+    // El cambio de estado lo hace el código, no el texto del modelo: a partir
+    // de acá el bot deja de responder esta conversación (ver el paso 3).
+    if (handoff) {
+      await this.db.execute(sql`
+        UPDATE conversations
+        SET status = 'human_takeover', updated_at = now()
+        WHERE id = ${conversationId}
+      `)
+
+      // La nota de traspaso se guarda como mensaje 'system': es el canal
+      // interno que ya usa el panel y no se le envía al cliente.
+      const motivo = MOTIVOS_DERIVACION[handoff.motivo] || handoff.motivo
+      const nota = `Derivada automáticamente por el asistente.\nMotivo: ${motivo}.\n${handoff.resumen}`
+      await this.db.execute(sql`
+        INSERT INTO messages (conversation_id, org_id, role, content)
+        VALUES (${conversationId}, ${orgId}, 'system', ${nota})
+      `)
+      console.log(`Conversación ${conversationId} derivada automáticamente (${handoff.motivo})`)
+    }
 
     return { received: true }
   }

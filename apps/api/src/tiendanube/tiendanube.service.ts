@@ -118,6 +118,12 @@ export class TiendanubeService {
       ON CONFLICT (org_id) DO UPDATE
       SET store_id = ${storeId}, access_token = ${accessToken}, connected_at = now()
     `);
+
+    // Al (re)conectar hay que invalidar las caches. Si no, isConnected() sigue
+    // devolviendo el valor anterior durante el TTL y el asistente informa que
+    // la tienda esta desconectada aunque el catalogo ya responda.
+    this.connectedCache.delete(orgId);
+    this.simplifiedCache.delete(orgId);
   }
 
   async getAccount(orgId: string): Promise<TiendanubeAccount | null> {
@@ -257,6 +263,60 @@ export class TiendanubeService {
   // Búsqueda combinada: el ?q= de Tiendanube primero, y un filtro local
   // (tolerante a acentos/typos parciales) sobre el catálogo cacheado como
   // fallback, deduplicando por id y priorizando los resultados de la API.
+  // Palabras que no identifican un producto. Si se las tomara como terminos de
+  // busqueda, cualquier consulta coincidiria con cualquier producto.
+  private static readonly PALABRAS_VACIAS = new Set([
+    'del', 'las', 'los', 'una', 'unas', 'unos', 'para', 'con', 'por', 'que', 'cual',
+    'cuales', 'tienen', 'tienes', 'tenes', 'tengo', 'hay', 'quiero', 'queria',
+    'busco', 'buscar', 'necesito', 'modelo', 'modelos', 'producto', 'productos',
+    'disponible', 'disponibles', 'disponibilidad', 'stock', 'precio', 'precios',
+    'cuanto', 'cuesta', 'sale', 'vale', 'valor', 'favor', 'hola', 'gracias',
+    'tiene', 'tienda', 'venden', 'vendes', 'algun', 'alguna', 'mismo', 'esta',
+    'este', 'estos', 'estas', 'sobre', 'como', 'donde', 'cuando', 'todo', 'toda',
+    'todos', 'todas', 'mas', 'menos', 'ver', 'dame', 'decime', 'podes', 'puedo',
+  ]);
+
+  // Busqueda local por palabras.
+  //
+  // Antes esta busqueda exigia que el nombre del producto contuviera la consulta
+  // COMPLETA como subcadena. Por eso "botas felipa" no encontraba el producto
+  // llamado "FELIPA": la frase entera no esta contenida en el nombre. El efecto
+  // era grave, porque el asistente interpretaba el resultado vacio como que el
+  // producto no existia e informaba al cliente que no habia disponibilidad.
+  //
+  // Ahora cada palabra util de la consulta suma puntaje (2 si aparece en el
+  // nombre, 1 si aparece en la descripcion) y se devuelven los productos con
+  // puntaje mayor a cero, ordenados de mayor a menor coincidencia.
+  private matchLocally(productos: SimplifiedProduct[], query: string): SimplifiedProduct[] {
+    const terminos = this.normalize(query)
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 3 && !TiendanubeService.PALABRAS_VACIAS.has(t))
+      // Se busca por la raiz, sin la "s" del plural, para que "botas" encuentre
+      // tambien el producto cuya descripcion dice "bota" y viceversa.
+      .map((t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t));
+
+    // Consulta formada solo por palabras vacias ("que tienen?"): se devuelve el
+    // catalogo completo para que el asistente decida, en lugar de informar que
+    // no hay nada.
+    if (terminos.length === 0) return productos;
+
+    return productos
+      .map((p) => {
+        const nombre = this.normalize(p.name ?? '');
+        const descripcion = this.normalize(p.description ?? '');
+        let puntaje = 0;
+        for (const t of terminos) {
+          if (nombre.includes(t)) puntaje += 2;
+          else if (descripcion.includes(t)) puntaje += 1;
+        }
+        return { producto: p, puntaje };
+      })
+      .filter((x) => x.puntaje > 0)
+      .sort((a, b) => b.puntaje - a.puntaje)
+      .slice(0, 10)
+      .map((x) => x.producto);
+  }
+
   async searchProducts(orgId: string, query: string): Promise<SimplifiedProduct[]> {
     const allProducts = await this.getSimplifiedProducts(orgId);
 
@@ -275,8 +335,7 @@ export class TiendanubeService {
       );
     }
 
-    const normalizedQuery = this.normalize(query);
-    const localResults = allProducts.filter((p) => this.normalize(p.name).includes(normalizedQuery));
+    const localResults = this.matchLocally(allProducts, query);
 
     const seen = new Set<number>(apiResults.map((p) => p.id));
     const combined = [...apiResults];

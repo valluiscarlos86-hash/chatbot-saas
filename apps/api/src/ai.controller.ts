@@ -40,7 +40,7 @@ export class AiController {
       officeHours: config?.office_hours || undefined,
     };
 
-    const [response, relevantChunks] = await Promise.all([
+    const [reply, relevantChunks] = await Promise.all([
       this.aiService.generateResponse(message, chatbotConfig, [], orgId),
       this.aiService.searchRelevantChunksWithSources(message, orgId),
     ]);
@@ -53,6 +53,9 @@ export class AiController {
       similarity: chunk.similarity,
     }));
 
-    return { response, sources };
+    // El chat de prueba del panel no tiene una conversación asociada, así que
+    // no cambia ningún estado: solo informa si el asistente pidió derivar, para
+    // poder verificar la decisión sin pasar por WhatsApp.
+    return { response: reply.response, handoff: reply.handoff, sources };
   }
 }

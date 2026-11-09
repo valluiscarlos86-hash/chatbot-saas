@@ -430,6 +430,25 @@ export default function ConversationsPage() {
                 ) : (
                   visibleMessages.map((msg, i) => {
                     if (msg.role === 'system') {
+                      // La nota de traspaso que escribe el asistente al derivar
+                      // ocupa varias lineas. Se muestra como nota interna, no
+                      // como el cartelito de un evento suelto, y se aclara que
+                      // no se le envio al cliente.
+                      if (msg.content.startsWith('Derivada automáticamente')) {
+                        return (
+                          <div key={msg.id} className="flex justify-center my-3">
+                            <div className="w-full max-w-[85%] rounded-lg border border-amber-400/50 bg-amber-50 px-4 py-3 dark:bg-amber-950/30">
+                              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                                Nota interna · no se envió al cliente
+                              </div>
+                              <div className="whitespace-pre-line text-xs text-foreground">
+                                {msg.content}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+
                       return (
                         <div key={msg.id} className="flex justify-center my-1">
                           <span className="text-xs text-muted-foreground bg-card-hover px-3 py-1 rounded-full">

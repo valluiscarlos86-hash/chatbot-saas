@@ -5,3 +5,11 @@ node_modules
 dist
 .turbo
 test-widget.html
+
+# Configuracion local de herramientas de IA
+.claude/
+
+# Respaldos temporales
+*.bak
+*.bak2
+*.original
