@@ -1,5 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
+import { fechaUTC } from '@/lib/fechas'
 import { sql } from 'drizzle-orm'
 
 async function getOrganization(clerkUserId: string) {
@@ -14,7 +15,7 @@ async function getOrganization(clerkUserId: string) {
 
 function getDaysRemaining(trialEndsAt: string): number {
   const now = new Date()
-  const end = new Date(trialEndsAt)
+  const end = fechaUTC(trialEndsAt)
   const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   return Math.max(0, diff)
 }

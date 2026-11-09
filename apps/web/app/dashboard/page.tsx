@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
+import { fechaUTC } from '@/lib/fechas'
 import { sql } from 'drizzle-orm'
 import {
   EnvelopeIcon,
@@ -31,13 +32,13 @@ function getInitials(name: string | null, phone: string): string {
 }
 
 function formatRelativeTime(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffMs = Date.now() - fechaUTC(dateStr).getTime()
   const diffMins = Math.floor(diffMs / 60_000)
   if (diffMins < 1) return 'Ahora'
   if (diffMins < 60) return `hace ${diffMins} min`
   const diffHours = Math.floor(diffMins / 60)
   if (diffHours < 24) return `hace ${diffHours}h`
-  return new Date(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+  return fechaUTC(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
       if (org.is_trial && org.trial_ends_at) {
         trialDaysLeft = Math.max(
           0,
-          Math.ceil((new Date(org.trial_ends_at).getTime() - Date.now()) / 86_400_000),
+          Math.ceil((fechaUTC(org.trial_ends_at).getTime() - Date.now()) / 86_400_000),
         )
       }
 

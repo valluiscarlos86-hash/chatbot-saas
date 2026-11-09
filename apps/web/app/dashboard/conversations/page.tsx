@@ -1,4 +1,5 @@
 'use client'
+import { fechaUTC } from '@/lib/fechas'
 
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -51,7 +52,7 @@ function StatusBadge({ status }: { status: Conversation['status'] }) {
 }
 
 function formatTime(dateStr: string) {
-  const date = new Date(dateStr)
+  const date = fechaUTC(dateStr)
   const diffHours = (Date.now() - date.getTime()) / 3_600_000
   if (diffHours < 24) return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
   return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
@@ -461,15 +462,15 @@ export default function ConversationsPage() {
                     const isUser = msg.role === 'user'
                     const showDate =
                       i === 0 ||
-                      new Date(msg.created_at).toDateString() !==
-                        new Date(visibleMessages[i - 1].created_at).toDateString()
+                      fechaUTC(msg.created_at).toDateString() !==
+                        fechaUTC(visibleMessages[i - 1].created_at).toDateString()
 
                     return (
                       <div key={msg.id}>
                         {showDate && (
                           <div className="flex justify-center my-3">
                             <span className="text-xs text-muted-foreground bg-card-hover px-3 py-1 rounded-full">
-                              {new Date(msg.created_at).toLocaleDateString('es-AR', {
+                              {fechaUTC(msg.created_at).toLocaleDateString('es-AR', {
                                 weekday: 'long', day: 'numeric', month: 'long',
                               })}
                             </span>
@@ -483,7 +484,7 @@ export default function ConversationsPage() {
                           }`}>
                             <p className="whitespace-pre-wrap wrap-break-word">{msg.content}</p>
                             <p className={`text-xs mt-1 text-right ${isUser ? 'text-accent-foreground/70' : 'text-subtle-foreground'}`}>
-                              {new Date(msg.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                              {fechaUTC(msg.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -520,7 +521,7 @@ export default function ConversationsPage() {
                     <p className="text-xs text-subtle-foreground mb-1">Inicio de conversación</p>
                     <p className="text-sm text-foreground">
                       {selectedConv?.created_at
-                        ? new Date(selectedConv.created_at).toLocaleDateString('es-AR', {
+                        ? fechaUTC(selectedConv.created_at).toLocaleDateString('es-AR', {
                             day: 'numeric', month: 'long', year: 'numeric',
                           })
                         : '—'}
