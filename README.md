@@ -45,7 +45,7 @@ Cliente escribe → Bot responde con info real → Si necesita humano → Agente
 | Pipeline RAG (Firecrawl + chunking + embeddings + pgvector) | ✅ |
 | WhatsApp end-to-end (webhook + Graph API) | ✅ |
 | Generación de respuestas con OpenAI (gpt-4o-mini) | ✅ |
-| Handoff a humano (con estado real) | ✅ |
+| Derivación a humano: el asistente la decide y el sistema cambia el estado, con nota de traspaso | ✅ |
 | Procesamiento de documentos y scraping de URLs | ✅ |
 | Dashboard de conversaciones, config del bot, chat de prueba | ✅ |
 | **Integración Tiendanube completa** (OAuth + API + function calling + precedencia) | ✅ |
@@ -171,47 +171,104 @@ chatbot-saas/
 
 ## Cómo correr localmente
 
+### Requisitos previos
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Node.js | 22 o superior | Ejecuta el frontend y el backend |
+| pnpm | 11.1.3 | Gestor de paquetes del monorepo (`npm install -g pnpm`) |
+| Docker Desktop | 27 o superior | Levanta PostgreSQL con la extensión pgvector |
+| Git | 2.x | Clonar el repositorio |
+
+### Pasos
+
+Todos los comandos se ejecutan desde la raíz del repositorio, salvo donde se
+indica lo contrario.
+
 ```bash
-# 1. Clonar e instalar
+# 1. Clonar e instalar las dependencias de todo el monorepo
 git clone https://github.com/valluiscarlos86-hash/chatbot-saas.git
 cd chatbot-saas
 pnpm install
 
-# 2. Levantar base de datos
-cd infrastructure
-docker compose -f docker-compose.dev.yml up -d
+# 2. Crear los archivos de configuración a partir de los ejemplos
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.local.example apps/web/.env.local
+#    Completar las claves en ambos archivos (ver "Variables de entorno")
 
-# 3. Backend (una terminal) — SIEMPRE en modo dev, nunca desde dist/
-cd apps/api
-pnpm start:dev          # → http://localhost:3001
+# 3. Levantar PostgreSQL con pgvector
+docker compose -f infrastructure/docker-compose.dev.yml up -d
 
-# 4. Frontend (otra terminal)
-cd apps/web
-pnpm dev                # → http://localhost:3000
+# 4. Crear las tablas: ocho migraciones de Drizzle
+cd packages/database && pnpm db:migrate && cd ../..
+
+# 5. Backend, en una terminal
+cd apps/api && pnpm start:dev        # → http://localhost:3001
+
+# 6. Frontend, en otra terminal, desde la raíz del repositorio
+cd apps/web && pnpm dev              # → http://localhost:3000
 ```
 
-> ⚠️ Correr el backend con `pnpm start:dev`, no desde `dist/` — el build compilado puede quedar desactualizado y fallar al levantar.
+> El paso 4 no es opcional. Sin las migraciones la base queda vacía y la
+> aplicación levanta pero falla en la primera consulta.
+
+> Correr el backend con `pnpm start:dev`, nunca desde `dist/`: el build
+> compilado puede quedar desactualizado y fallar al iniciar.
+
+### Verificar que quedó andando
+
+| Dirección | Qué debería verse |
+|---|---|
+| http://localhost:3000 | Página de inicio de AtentIA |
+| http://localhost:3001 | Respuesta del backend |
+| http://localhost:3000/dashboard/chatbot | Configuración del bot y chat de prueba, después de registrarse |
 
 ---
 
 ## Variables de entorno
 
-> Nunca subir `.env` a GitHub (está en `.gitignore`).
+El repositorio incluye dos archivos de ejemplo con todas las variables
+necesarias y ninguna clave real: `apps/api/.env.example` y
+`apps/web/.env.local.example`. Los archivos con valores reales están en
+`.gitignore` y no se publican.
 
-Variables realmente usadas por el backend:
+### Backend — `apps/api/.env`
 
-```bash
-DATABASE_URL=postgresql://...
-OPENAI_API_KEY=sk-...
-CLERK_WEBHOOK_SECRET=whsec_...
-WHATSAPP_VERIFY_TOKEN=...
-FIRECRAWL_API_KEY=fc-...
-TIENDANUBE_APP_ID=...
-TIENDANUBE_CLIENT_SECRET=...
-PORT=3001
-```
+| Variable | Obligatoria | Para qué |
+|---|---|---|
+| `DATABASE_URL` | Sí | Conexión a PostgreSQL |
+| `OPENAI_API_KEY` | Sí | Generación de respuestas y de embeddings |
+| `CLERK_WEBHOOK_SECRET` | Sí | Verificación de la firma del webhook de Clerk |
+| `WHATSAPP_VERIFY_TOKEN` | Solo para WhatsApp | Validación del webhook de Meta |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID` | Solo para WhatsApp | Credenciales de la cuenta de prueba |
+| `FIRECRAWL_API_KEY` | Solo para cargar URLs | Extracción del contenido de páginas web |
+| `TIENDANUBE_APP_ID`, `TIENDANUBE_CLIENT_SECRET` | Solo para Tiendanube | Credenciales de la aplicación |
+| `PORT` | No | Puerto del backend. Por omisión, 3001 |
 
-(El access token de cada cuenta de WhatsApp se guarda en la DB por org, no como env var global.)
+El token de acceso de cada cuenta de WhatsApp se guarda en la base de datos por
+organización, no como variable de entorno global.
+
+### Frontend — `apps/web/.env.local`
+
+| Variable | Obligatoria | Para qué |
+|---|---|---|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` y `CLERK_SECRET_KEY` | Sí | Autenticación |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` y las tres rutas restantes | Sí | Pantallas de ingreso y registro |
+| `DATABASE_URL` | Sí | Consultas directas desde los Server Components |
+| `BACKEND_URL` | Sí | Dirección del backend. En desarrollo, `http://localhost:3001` |
+| `NEXT_PUBLIC_SUPPORT_WHATSAPP` | No | Número de contacto que muestra el panel |
+
+### Nota para quien evalúa el prototipo
+
+Levantar el sistema completo requiere credenciales propias de servicios externos
+—OpenAI, Clerk y, de forma opcional, Meta WhatsApp Business, Tiendanube y
+Firecrawl—. Son cuentas personales con facturación asociada, por lo que no
+pueden publicarse en un repositorio.
+
+Sin esas credenciales el proyecto compila y levanta, pero el asistente no genera
+respuestas. Para ver el sistema funcionando sin configurar nada está el **video
+de demostración** enlazado en la entrega, donde se recorren las funcionalidades
+principales sobre una instalación real.
 
 ---
 
