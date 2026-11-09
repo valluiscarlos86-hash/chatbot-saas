@@ -1,12 +1,15 @@
 import { currentUser } from '@clerk/nextjs/server'
 import SettingsForm from './SettingsForm'
+import PaletteSelector from './PaletteSelector'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { resolvePalette } from '@/lib/palettes'
 
 export default async function SettingsPage() {
   const user = await currentUser()
   const firstName = user?.firstName ?? null
   const email = user?.emailAddresses[0]?.emailAddress ?? null
+  const palette = resolvePalette(user?.unsafeMetadata?.palette)
 
   return (
     <div className="flex flex-col h-full">
@@ -17,6 +20,8 @@ export default async function SettingsPage() {
         <div className="max-w-2xl mx-auto flex flex-col gap-6">
 
           <SettingsForm firstName={firstName} email={email} />
+
+          <PaletteSelector initialPalette={palette} />
 
           <Card>
             <CardHeader><CardTitle>Plan actual</CardTitle></CardHeader>

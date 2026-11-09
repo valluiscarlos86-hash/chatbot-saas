@@ -19,10 +19,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="w-56 min-w-56 bg-[#111827] flex flex-col">
+      <aside className="w-56 min-w-56 bg-sidebar flex flex-col">
         <div className="px-4 py-5 text-white font-bold text-lg flex items-center justify-between">
           <span>
-            Atent<span className="text-[#10B981]">IA</span>
+            Atent<span className="text-accent">IA</span>
           </span>
           <ThemeToggle />
         </div>
@@ -35,8 +35,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 href={item.href}
                 className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                   isActive
-                    ? 'bg-[#10B981] text-white font-medium'
-                    : 'text-gray-400 hover:bg-[#1F2937] hover:text-white'
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'text-gray-400 hover:bg-sidebar-hover hover:text-white'
                 }`}
               >
                 {item.label}
@@ -44,12 +44,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )
           })}
         </nav>
-        <div className="p-3 border-t border-[#1F2937]">
+        <div className="p-3 border-t border-sidebar-hover">
           <a
             href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP}?text=${encodeURIComponent('Hola, tengo una consulta sobre AtentIA')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-2 transition-colors text-gray-400 hover:bg-[#1F2937] hover:text-white"
+            className="px-3 py-2 rounded-lg text-sm flex items-center gap-2 mb-2 transition-colors text-gray-400 hover:bg-sidebar-hover hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
@@ -62,14 +62,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             href="/dashboard/settings"
             className={`px-3 py-2 rounded-lg text-sm block mb-2 transition-colors ${
               pathname === '/dashboard/settings'
-                ? 'bg-[#10B981] text-white font-medium'
-                : 'text-gray-400 hover:bg-[#1F2937] hover:text-white'
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-gray-400 hover:bg-sidebar-hover hover:text-white'
             }`}
           >
             Configuración
           </Link>
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#1F2937] cursor-pointer transition-colors">
-            <div className="w-7 h-7 rounded-full bg-[#10B981] flex items-center justify-center text-xs font-semibold text-white min-w-7">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-sidebar-hover cursor-pointer transition-colors">
+            <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground min-w-7">
               VB
             </div>
             <div className="flex flex-col">
