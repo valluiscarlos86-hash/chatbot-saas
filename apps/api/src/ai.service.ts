@@ -250,16 +250,21 @@ export class AiService {
 
     const texto = sinTilde(officeHours);
 
-    // Reconoce tramos del tipo "lunes a viernes de 9 a 18" o "sabados 10-13".
-    const patron =
-      /(domingo|lunes|martes|miercoles|jueves|viernes|sabado)s?(?:\s*(?:a|al|hasta)\s*(domingo|lunes|martes|miercoles|jueves|viernes|sabado)s?)?[^0-9]{0,20}(\d{1,2})(?::(\d{2}))?\s*(?:a|hasta|-)\s*(\d{1,2})(?::(\d{2}))?/g;
+    // El analisis se hace en dos pasadas, y no con una sola expresion que exija
+    // un dia delante de cada franja. Un horario como "lunes a sabados de 9 a 13
+    // y de 16:30 a 20:30" tiene dos franjas y un solo grupo de dias: con una
+    // sola expresion la segunda franja se descartaba en silencio y el negocio
+    // figuraba cerrado toda la tarde.
 
-    const tramos: Array<{ dias: number[]; desde: number; hasta: number }> = [];
-    let m: RegExpExecArray | null;
-    while ((m = patron.exec(texto)) !== null) {
-      const d1 = aDia(m[1]);
+    // Pasada 1: grupos de dias, con la posicion donde termina cada uno.
+    const diaPatron =
+      /(domingo|lunes|martes|miercoles|jueves|viernes|sabado)s?(?:\s*(?:a|al|hasta)\s*(domingo|lunes|martes|miercoles|jueves|viernes|sabado)s?)?/g;
+    const grupos: Array<{ fin: number; dias: number[] }> = [];
+    let g: RegExpExecArray | null;
+    while ((g = diaPatron.exec(texto)) !== null) {
+      const d1 = aDia(g[1]);
       if (d1 === undefined) continue;
-      const d2 = m[2] ? aDia(m[2]) : d1;
+      const d2 = g[2] ? aDia(g[2]) : d1;
       if (d2 === undefined) continue;
 
       // Expande el rango de dias ("lunes a viernes" -> [1,2,3,4,5]).
@@ -268,10 +273,31 @@ export class AiService {
         dias.push(d);
         if (d === d2) break;
       }
+      grupos.push({ fin: diaPatron.lastIndex, dias });
+    }
 
-      const desde = parseInt(m[3], 10) * 60 + (m[4] ? parseInt(m[4], 10) : 0);
-      const hasta = parseInt(m[5], 10) * 60 + (m[6] ? parseInt(m[6], 10) : 0);
+    // Pasada 2: franjas horarias. Cada una hereda el ultimo grupo de dias que
+    // haya terminado antes de ella.
+    const horaPatron = /(\d{1,2})(?::(\d{2}))?\s*(?:a|hasta|-)\s*(\d{1,2})(?::(\d{2}))?/g;
+    const tramos: Array<{ dias: number[]; desde: number; hasta: number }> = [];
+    let m: RegExpExecArray | null;
+    while ((m = horaPatron.exec(texto)) !== null) {
+      const h1 = parseInt(m[1], 10);
+      const n1 = m[2] ? parseInt(m[2], 10) : 0;
+      const h2 = parseInt(m[3], 10);
+      const n2 = m[4] ? parseInt(m[4], 10) : 0;
+      if (h1 > 24 || h2 > 24 || n1 > 59 || n2 > 59) continue;
+
+      const desde = h1 * 60 + n1;
+      const hasta = h2 * 60 + n2;
       if (hasta <= desde) continue;
+
+      let dias: number[] | null = null;
+      for (const grupo of grupos) {
+        if (grupo.fin <= m.index) dias = grupo.dias;
+      }
+      if (!dias) continue;
+
       tramos.push({ dias, desde, hasta });
     }
 
