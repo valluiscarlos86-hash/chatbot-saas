@@ -325,7 +325,8 @@ export class AiService {
             motivo: {
               type: 'string',
               enum: ['pedido_explicito', 'sin_informacion', 'excepcion_a_politica', 'reclamo', 'otro'],
-              description: 'Motivo de la derivación.',
+              description:
+                'Motivo de la derivación. Elegí con precisión, porque este dato lo lee la persona que toma la conversación: pedido_explicito SOLO si el cliente pidió hablar con una persona, un humano, un asesor o un encargado; sin_informacion si no encontraste el dato en el catálogo ni en los documentos del negocio; excepcion_a_politica si el cliente pide algo que las políticas del negocio no contemplan; reclamo si expresa una queja o disconformidad; otro para cualquier otro caso.',
             },
             resumen: {
               type: 'string',
