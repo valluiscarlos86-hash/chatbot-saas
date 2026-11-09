@@ -54,14 +54,40 @@ export default async function AnalyticsPage() {
 
       const [resolutionRows, responseRows, convRows, msgRows, dayRows, topicRows] =
         await Promise.all([
-          // Conversaciones del mes resueltas sin intervención humana
+          // Conversaciones con actividad en el mes resueltas sin intervención
+          // humana. Se mide por actividad (updated_at) y no por fecha de alta:
+          // una conversación abierta en septiembre que el cliente retoma hoy
+          // forma parte de la operación de este mes, y contarla por su fecha
+          // de creación la dejaba fuera de todos los indicadores.
+          //
+          // Una conversación cuenta como resuelta sin intervención humana
+          // cuando no quedó registro de que una persona la haya tomado. El
+          // indicador se apoyaba antes en la columna assigned_agent_id, que
+          // ningún punto del código completa: el filtro era siempre verdadero
+          // y el indicador informaba 100 % de forma invariable, incluso en
+          // conversaciones atendidas por un agente.
+          //
+          // Se usa en su lugar la evidencia que sí queda asentada: el estado
+          // actual de la conversación y los mensajes internos que registran la
+          // derivación automática y la toma por parte de un agente.
           db.execute(sql`
             SELECT
-              COUNT(*)::int                                            AS total,
-              COUNT(*) FILTER (WHERE assigned_agent_id IS NULL)::int   AS sin_humano
-            FROM conversations
-            WHERE org_id = ${orgId}
-              AND created_at >= DATE_TRUNC('month', NOW())
+              COUNT(*)::int AS total,
+              COUNT(*) FILTER (
+                WHERE c.status <> 'human_takeover'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM messages m
+                    WHERE m.conversation_id = c.id
+                      AND m.role = 'system'
+                      AND (
+                        m.content LIKE 'Derivada automáticamente%'
+                        OR m.content LIKE 'Conversación tomada por un agente%'
+                      )
+                  )
+              )::int AS sin_humano
+            FROM conversations c
+            WHERE c.org_id = ${orgId}
+              AND c.updated_at >= DATE_TRUNC('month', NOW())
           `),
 
           // Demora promedio entre la consulta del cliente y la respuesta del agente
@@ -82,9 +108,10 @@ export default async function AnalyticsPage() {
             WHERE role = 'user' AND rol_siguiente = 'assistant'
           `),
 
+          // Conversaciones con actividad en el mes, por el mismo criterio.
           db.execute(sql`
             SELECT COUNT(*)::int AS count FROM conversations
-            WHERE org_id = ${orgId} AND created_at >= DATE_TRUNC('month', NOW())
+            WHERE org_id = ${orgId} AND updated_at >= DATE_TRUNC('month', NOW())
           `),
 
           db.execute(sql`
@@ -160,7 +187,7 @@ export default async function AnalyticsPage() {
     {
       label: 'Conversaciones',
       value: String(conversationsThisMonth),
-      hint: 'este mes',
+      hint: 'con actividad este mes',
       icon: ChatBubbleLeftRightIcon,
     },
     {
