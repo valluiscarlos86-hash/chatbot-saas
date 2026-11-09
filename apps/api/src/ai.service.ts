@@ -408,17 +408,33 @@ export class AiService {
     return {
       id: p.id,
       name: p.name,
-      priceFrom: p.priceFrom,
+      priceFrom: this.formatearPrecio(p.priceFrom),
       available: p.hasStock,
       variants: p.variants.map((v) => ({
         label: v.label,
-        finalPrice: v.finalPrice,
-        price: v.price,
-        promotionalPrice: v.promotionalPrice,
+        finalPrice: this.formatearPrecio(v.finalPrice),
+        price: this.formatearPrecio(v.price),
+        promotionalPrice: this.formatearPrecio(v.promotionalPrice),
         stock: v.stock,
         available: v.available,
       })),
     };
+  }
+
+  // Los importes llegan del catalogo como "98300.00". Se formatean aca, en
+  // pesos argentinos, para que el modelo no elija el formato por su cuenta:
+  // sin esto escribia "$98.300" en una respuesta y "$98,300" en la siguiente,
+  // y esta ultima se lee como un importe mil veces mayor.
+  private formatearPrecio(valor: string | null | undefined): string | null {
+    if (valor === null || valor === undefined || valor === '') return null;
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) return String(valor);
+    const tieneCentavos = Math.round(numero * 100) % 100 !== 0;
+    const formateado = new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: tieneCentavos ? 2 : 0,
+      maximumFractionDigits: 2,
+    }).format(numero);
+    return `$${formateado}`;
   }
 
   private async executeTiendanubeTool(orgId: string, toolName: string, args: any): Promise<string> {
