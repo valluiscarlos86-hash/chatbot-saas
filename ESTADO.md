@@ -2,7 +2,7 @@
 
 > Foto honesta de qué está implementado, qué está a medias y qué es aspiracional.
 > Basado en auditoría directa del código (no de la documentación previa).
-> Última actualización: Junio 2026.
+> Última actualización: noviembre de 2026.
 
 ---
 
@@ -40,6 +40,7 @@ Lo que NO está es la infraestructura para escalar y monetizar: todo el procesam
 | Configuración del bot | ✅ | Nombre, tono, mensaje de bienvenida, reglas de escalada, horario. Todo persistido y usado. |
 | Chat de prueba | ✅ | Prueba el bot desde el dashboard contra `/ai/test-chat`, muestra las fuentes RAG usadas. |
 | Auth multi-tenant (Clerk) | ✅ | Login, registro, organización por usuario. Webhook de Clerk crea la org automáticamente. |
+| Panel de analítica | ✅ | Lee datos reales: proporción de conversaciones resueltas sin intervención humana, tiempo medio de respuesta, mensajes del mes y temas más consultados, todo acotado al mes en curso y a la organización. |
 
 ---
 
@@ -84,7 +85,6 @@ Lo que NO está es la infraestructura para escalar y monetizar: todo el procesam
 | Semantic cache | ❌ | No existe cache de respuestas del LLM. (El único cache es el de productos de Tiendanube.) |
 | Control de tokens/costo por org | ❌ | `messages.tokensUsed` existe en el schema pero nunca se lee ni se guarda. |
 | LangChain | ❌ | No se usa. Llamadas directas a la API de OpenAI. |
-| Página de Analítica | ❌ | 100% mockeada. Valores hardcodeados (`'0%'`, `'0s'`, `'0'`). No lee ningún dato real. |
 | Deploy a producción | ❌ | Corre solo en local. Sin Vercel/Railway configurados. |
 
 ---

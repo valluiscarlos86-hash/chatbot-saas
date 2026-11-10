@@ -49,6 +49,7 @@ Cliente escribe → Bot responde con info real → Si necesita humano → Agente
 | Procesamiento de documentos y scraping de URLs | ✅ |
 | Dashboard de conversaciones, config del bot, chat de prueba | ✅ |
 | **Integración Tiendanube completa** (OAuth + API + function calling + precedencia) | ✅ |
+| Panel de analítica: resolución sin humano, tiempo de respuesta y temas más consultados | ✅ |
 
 ### 🟡 Parcial
 
@@ -67,7 +68,6 @@ Cliente escribe → Bot responde con info real → Si necesita humano → Agente
 | Cola de mensajes (BullMQ/Redis) — todo es síncrono hoy | ❌ |
 | Row Level Security (aislamiento es por `WHERE org_id` manual) | ❌ |
 | Model routing, semantic cache, control de tokens | ❌ |
-| Página de Analítica (mockeada) | ❌ |
 | Deploy a producción | ❌ |
 
 ---
@@ -283,7 +283,7 @@ principales sobre una instalación real.
 ### ◻️ Próximo (producto)
 - **Venta conversacional** (el bot cierra la venta en WhatsApp: carrito, datos, orden, pago) — feature grande
 - Búsqueda semántica de productos (mirar descripciones, no solo nombres)
-- Página de Analítica funcional
+- Panel de analítica leyendo datos reales
 - Killer features de estrategia: modo borrador/aprobación, reporte semanal, detección de lead caliente
 
 ### ◻️ Antes de escalar (deuda de infra consciente)
