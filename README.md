@@ -219,7 +219,7 @@ cd apps/web && pnpm dev              # → http://localhost:3000
 
 | Dirección | Qué debería verse |
 |---|---|
-| http://localhost:3000 | Página de inicio de AtentIA |
+| http://localhost:3000 | Redirige al ingreso, o al panel si hay sesión activa |
 | http://localhost:3001 | Respuesta del backend |
 | http://localhost:3000/dashboard/chatbot | Configuración del bot y chat de prueba, después de registrarse |
 
@@ -267,8 +267,10 @@ pueden publicarse en un repositorio.
 
 Sin esas credenciales el proyecto compila y levanta, pero el asistente no genera
 respuestas. Para ver el sistema funcionando sin configurar nada está el **video
-de demostración** enlazado en la entrega, donde se recorren las funcionalidades
-principales sobre una instalación real.
+de demostración**, donde se recorren las funcionalidades principales sobre una
+instalación real:
+
+https://drive.google.com/drive/folders/1S0u5bLNbUEYKJh-24qWWo3XhP0NYurYQ
 
 ---
 
