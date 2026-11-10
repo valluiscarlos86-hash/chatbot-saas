@@ -13,3 +13,10 @@ test-widget.html
 *.bak
 *.bak2
 *.original
+
+# Archivos de prueba y configuracion de herramientas de desarrollo:
+# no forman parte del prototipo entregado
+test-*.txt
+.claude/
+.agents/
+skills-lock.json
