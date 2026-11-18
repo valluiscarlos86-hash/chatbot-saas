@@ -459,7 +459,10 @@ export default function ConversationsPage() {
                       )
                     }
 
-                    const isUser = msg.role === 'user'
+                    // El panel se mira desde el negocio: a la derecha va lo que
+                    // responde el negocio (el bot o un agente) y a la izquierda lo
+                    // que escribe el cliente, igual que en WhatsApp.
+                    const esDelNegocio = msg.role === 'assistant'
                     const showDate =
                       i === 0 ||
                       fechaUTC(msg.created_at).toDateString() !==
@@ -476,14 +479,14 @@ export default function ConversationsPage() {
                             </span>
                           </div>
                         )}
-                        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex ${esDelNegocio ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                            isUser
+                            esDelNegocio
                               ? 'bg-accent text-accent-foreground rounded-br-sm'
                               : 'bg-card text-foreground rounded-bl-sm shadow-sm border border-border'
                           }`}>
                             <p className="whitespace-pre-wrap wrap-break-word">{msg.content}</p>
-                            <p className={`text-xs mt-1 text-right ${isUser ? 'text-accent-foreground/70' : 'text-subtle-foreground'}`}>
+                            <p className={`text-xs mt-1 text-right ${esDelNegocio ? 'text-accent-foreground/70' : 'text-subtle-foreground'}`}>
                               {fechaUTC(msg.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
