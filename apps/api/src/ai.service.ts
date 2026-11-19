@@ -518,6 +518,17 @@ ${chunks.map((c, i) => `[${i + 1}] ${c}`).join('\n\n')}`;
         ...(tiendanubeConnected ? this.getTiendanubeTools() : []),
         this.getHandoffTool(),
       ];
+      // Al derivar por falta de informacion el modelo anunciaba la derivacion
+      // sin decir antes que no habia encontrado el dato, de modo que prometer
+      // "el precio de X" daba por supuesto que X era un producto del negocio.
+      // La herramienta define cuando derivar; esta regla define que contestar.
+      const handoffInstruction =
+        '\n\nQUÉ DECIR AL DERIVAR (importante):\n' +
+        '- Si derivás porque NO encontraste el dato, decilo primero y de forma explícita: que no encontrás ese producto o esa información en lo que tenés cargado. Recién después ofrecé que una persona del equipo lo verifique.\n' +
+        '- Nunca des por supuesto que el producto o el servicio por el que preguntan existe en este negocio. Si no figura en la información de arriba, está PROHIBIDO decir "te vamos a pasar el precio de X", "una persona te responde con el precio de X" o cualquier frase que trate a X como algo que este negocio vende. Tampoco repitas el nombre del producto como si lo tuvieras.\n' +
+        '- Antes de derivar por un producto que no figura, fijate si lo que preguntan pertenece al rubro de este negocio. Si no pertenece, decilo directamente: que ese artículo no es de los que vende el negocio, y aclará en una frase qué sí vende. En ese caso no hace falta derivar a nadie.\n' +
+        '- Si derivás porque el cliente pidió hablar con una persona, o por un reclamo, no hace falta esta aclaración: avisá que una persona del equipo va a responder.';
+
       const tiendanubeInstruction = tiendanubeConnected
         ? '\n\nEste negocio tiene una tienda online conectada. Cuando el cliente pregunte por productos, precios, stock o disponibilidad, USÁ la herramienta buscar_productos para consultar datos reales en vivo. No inventes precios ni stock: siempre consultá. Los precios están en pesos argentinos.\nNUNCA incluyas links, URLs ni direcciones web en tus respuestas. No uses markdown de ningún tipo (ni [texto](link), ni asteriscos, ni guiones). Respondé en texto plano. Si el cliente quiere comprar, asesoralo sobre el producto (precio, stock, características) pero no le pases ninguna URL.\n\nREGLA DE PRECEDENCIA DE FUENTES (muy importante):\nEsta tienda tiene Tiendanube conectado. Para CUALQUIER pregunta sobre precio, stock, disponibilidad o características de un producto, la ÚNICA fuente válida es la herramienta buscar_productos (datos en vivo de Tiendanube).\n- NUNCA uses la "Información del negocio" (documentos cargados) para responder precios, stock o disponibilidad de productos. Esos documentos pueden estar desactualizados.\n- Si buscar_productos NO encuentra el producto que pregunta el cliente, NO afirmes que no está disponible ni que no existe: decí que no lo encontrás en el catálogo con ese nombre, pedile que lo describa de otra forma y ofrecele derivarlo a una persona del equipo. NO inventes ni recuperes su precio/stock desde los documentos del negocio, aunque encuentres algo parecido.\n- Los documentos del negocio SÍ los podés usar para responder sobre envíos, formas de pago, horarios, devoluciones, políticas y preguntas generales. Para eso siguen siendo válidos.\nEn resumen: productos, precios y stock vienen SIEMPRE de Tiendanube; el resto de la información puede venir de los documentos.\n- Si buscar_productos devuelve un error o no responde, NO afirmes precio, promoción, descuento ni disponibilidad: decí que no podés confirmar ese dato en este momento y que lo derivás a una persona del equipo.'
         : // Sin tienda online conectada, la fuente valida de precios y stock son
@@ -540,7 +551,7 @@ ${chatbotConfig.systemPrompt}
 
 Instrucciones específicas del negocio:
 ${chatbotConfig.tone === 'formal' ? 'Usá un tono formal y profesional.' : chatbotConfig.tone === 'neutral' ? 'Usá un tono neutro y directo.' : 'Usá un tono amigable y cercano.'}
-${knowledgeContext}${tiendanubeInstruction}
+${knowledgeContext}${tiendanubeInstruction}${handoffInstruction}
 
 Reglas que siempre debés seguir:
 - Respondé siempre en español
