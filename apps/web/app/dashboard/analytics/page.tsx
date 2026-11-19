@@ -119,7 +119,12 @@ export default async function AnalyticsPage() {
             WHERE org_id = ${orgId} AND created_at >= DATE_TRUNC('month', NOW())
           `),
 
-          // Conversaciones iniciadas por día, últimos 14 días
+          // Conversaciones con actividad por día, últimos 14 días.
+          // Se agrupa por updated_at y no por created_at para que el gráfico
+          // mida lo mismo que las tarjetas de arriba: una conversación abierta
+          // hace meses y respondida esta semana cuenta en el día en que hubo
+          // actividad. Agrupar por fecha de creación dejaba el gráfico vacío
+          // mientras las tarjetas informaban conversaciones del mes.
           db.execute(sql`
             SELECT TO_CHAR(d, 'DD/MM') AS dia, COUNT(c.id)::int AS cantidad
             FROM generate_series(
@@ -129,7 +134,7 @@ export default async function AnalyticsPage() {
             ) d
             LEFT JOIN conversations c
               ON c.org_id = ${orgId}
-             AND DATE_TRUNC('day', c.created_at) = d
+             AND DATE_TRUNC('day', c.updated_at) = d
             GROUP BY d
             ORDER BY d
           `),
